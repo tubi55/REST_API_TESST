@@ -1,26 +1,40 @@
+const headers = {
+  headers: {
+    Authorization: "Bearer dev-token",
+    "X-User-Id": "admin",
+  },
+};
 const btn1 = document.querySelector("#btn1");
+const btn2 = document.querySelector("#btn2");
 
-// async 기본적으로 js는 비동기방식이라서 외부서버에서 데이터를 가지고오기전에 안쪽 코드가 실행되지 않도록 막아주기 위한 함수 설정
+//현재 프로젝트에서 headers가 필요한 이유는 현재 페이지의 담당 관리자가 "나"라는 것을 증명하기 위함
+//로그인하려고 만든게 아님
+//추후 외부 서비스 연결시 담당자가 나임을 구분시키기 위한 정보값
+
+// 고객정보 get 방식으로 요청하는 함수 정의
 const getCustomer = async () => {
-  // api 라우터에 설정된 url로 고객정보 호출 요청
-  const res = await fetch("/api/customers", {
-    // 요청 보낼때 관리자인지 구별하기 위한 인증 토큰
-    headers: {
-      Authorization: "Bearer dev-token",
-      "X-User-Id": "admin",
-    },
-  });
-
+  const res = await fetch("/api/customers", headers);
   if (!res.ok) throw new Error();
   return res.json();
 };
 
-// btn1을 클릭하면 getCustomer함수 호출
-// 만약 내부적으로 fetch(서버통신) 로직이 들어가 있는 함수호출시 async await을 안쓰면 발생하는 문제
-// fetch는 promise 객체 반환 (값이 정해지지 않은 약속된 상태의 객체 (pending, fullfilled, rejected))
-// async await 없이 fetch 반환값을 값을 호출하면 무조건 결과값이 Promise<pending>이라는 상태로 출력됨 (서버응답이 완료되지 않았기 때문)
-// async await로 호출해야지 fullfilled로 완료된 상태의 결과값을 확인 가능
+// 첫번째 버튼 클릭시 고객정보 반환함수 호출구문
 btn1.addEventListener("click", async () => {
   const result = await getCustomer();
   console.log(result);
+});
+
+// ==================================
+// 상품정보 요청 함수 등록 및 호출
+// ==================================
+// 고객정보 get 방식으로 요청하는 함수 정의
+const getProduct = async () => {
+  const res = await fetch("/api/products", headers);
+  if (!res.ok) throw new Error();
+  return res.json();
+};
+
+btn2.addEventListener("click", async () => {
+  const result = await getProduct();
+  console.log(result.content);
 });
