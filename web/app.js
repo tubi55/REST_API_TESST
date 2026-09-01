@@ -64,3 +64,22 @@ const getCustomerList = async () => {
 };
 
 getCustomerList();
+
+// ==========================================
+//  폼안쪽의 정보들을 객체형태로 한번에 받아노는 법
+// ==========================================
+const form = document.querySelector("#productForm");
+const btnSubmit = document.querySelector("#btnSubmit");
+
+btnSubmit.addEventListener("click", (e) => {
+  // submit의 기본 이벤트 기능은 페이지이동이 포함되어 있기에
+  // 기본 이벤트 기능을 막아줌
+  e.preventDefault();
+
+  // form안쪽에 있는 값을 모두 가져와서 키와, value분리
+  const formInit = new FormData(form).entries();
+  // 키와 value값 분리될걸 하나의 객체(딕셔너리)형태로 묶어줌
+  const productInfo = Object.fromEntries(formInit);
+
+  console.log(productInfo);
+});
