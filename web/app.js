@@ -82,6 +82,16 @@ btnSubmit.addEventListener("click", (e) => {
   const productInfo = Object.fromEntries(formInit);
 
   console.log(productInfo);
+
+  fetch("/api/products", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer dev-token",
+      "X-User-Id": "admin",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(productInfo),
+  });
 });
 
 /*
