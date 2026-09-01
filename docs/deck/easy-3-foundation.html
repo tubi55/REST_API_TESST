@@ -1,0 +1,1899 @@
+<title>서버의 아래층</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --paper:#F1F3F4; --card:#FBFCFC; --ink:#17212B; --muted:#5A6672;
+  --rule:#D3D9DD; --rule-soft:#E4E9EB;
+  --oxide:#B4501E; --oxide-soft:#F5E6DC;
+  --teal:#16697A; --teal-soft:#DDEBED;
+  --shadow:0 1px 2px rgba(23,33,43,.06), 0 8px 24px rgba(23,33,43,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:#131A20; --card:#1B242C; --ink:#E4E9EC; --muted:#93A1AC;
+    --rule:#2C3842; --rule-soft:#232E37;
+    --oxide:#E08A55; --oxide-soft:#3A2418;
+    --teal:#63B0C0; --teal-soft:#16303A;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
+  }
+}
+:root[data-theme="dark"] {
+  --paper:#131A20; --card:#1B242C; --ink:#E4E9EC; --muted:#93A1AC;
+  --rule:#2C3842; --rule-soft:#232E37;
+  --oxide:#E08A55; --oxide-soft:#3A2418;
+  --teal:#63B0C0; --teal-soft:#16303A;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
+}
+
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans KR", system-ui, -apple-system, sans-serif;
+  line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.deck { position:relative; min-height:100vh; }
+
+.rail {
+  position:fixed; left:0; top:0; bottom:0; width:56px; z-index:5;
+  border-right:1px solid var(--rule-soft); background:var(--paper);
+  display:flex; flex-direction:column; align-items:center; justify-content:space-between;
+  padding:20px 0;
+}
+.rail-ch { writing-mode:vertical-rl; font-size:12.5px; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--muted); font-weight:500; }
+.rail-no { font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--muted);
+  font-variant-numeric:tabular-nums; }
+
+/* 표와 구조표가 넓게 눕도록 슬라이드 폭을 크게 잡는다.
+   줄글은 아래에서 max-width 로 따로 묶으니 같이 늘어나지 않는다 */
+.stage { min-height:100vh; padding:48px 44px 84px 84px;
+  display:flex; flex-direction:column; justify-content:flex-start; }
+.slide { display:none; max-width:88rem; width:100%; }
+/* margin:auto 가 자리가 남으면 가운데로, 넘치면 위부터 놓는다 */
+.slide.on { margin:auto; }
+.slide.on { display:block; animation:rise .3s ease-out; }
+@keyframes rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+@media (prefers-reduced-motion: reduce) { .slide.on { animation:none; } }
+
+.eyebrow { font-size:14px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; margin-bottom:16px; }
+.eyebrow.pain { color:var(--oxide); }
+.eyebrow.build { color:var(--teal); }
+
+h1 { font-family:"Gowun Batang",serif; font-weight:700; font-size:clamp(2.5rem,5.6vw,4rem);
+  line-height:1.28; margin:0 0 20px; text-wrap:balance; letter-spacing:-.01em; }
+h2 { font-family:"Gowun Batang",serif; font-weight:700; font-size:clamp(1.75rem,3.4vw,2.45rem);
+  line-height:1.35; margin:0 0 16px; text-wrap:balance; max-width:32ch; }
+h3 { font-size:1.18rem; font-weight:600; margin:0 0 8px; }
+p { margin:0 0 16px; max-width:60ch; font-size:1.2rem; }
+p.lead { font-size:1.34rem; color:var(--muted); max-width:56ch; }
+p.sub { font-size:1.04rem; color:var(--muted); }
+strong { font-weight:600; }
+em { font-style:normal; color:var(--oxide); font-weight:500; }
+b.t { color:var(--teal); font-weight:600; }
+
+.cover { border-top:3px solid var(--ink); padding-top:26px; }
+.cover .num { font-family:"IBM Plex Mono",monospace; font-size:4rem; line-height:1;
+  color:var(--rule); font-weight:500; margin-bottom:14px; }
+
+.statement { font-family:"Gowun Batang",serif; font-size:clamp(2.05rem,4.6vw,3.15rem);
+  line-height:1.45; text-wrap:balance; max-width:24ch; margin:0; }
+
+.cards { display:grid; gap:14px; margin:0 0 16px; max-width:76rem; }
+.cards.two { grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
+.cards.three { grid-template-columns:repeat(auto-fit,minmax(185px,1fr)); }
+.card { background:var(--card); border:1px solid var(--rule-soft); border-radius:3px;
+  padding:16px 18px; box-shadow:var(--shadow); }
+.card p { margin:0; font-size:1.06rem; color:var(--muted); }
+.card .k { font-family:"IBM Plex Mono",monospace; font-size:.92rem; color:var(--muted);
+  letter-spacing:.06em; margin-bottom:6px; }
+
+.acc { border-left:3px solid var(--oxide); background:var(--oxide-soft);
+  padding:16px 20px; border-radius:0 3px 3px 0; margin:0 0 14px; max-width:72rem; }
+.acc h3 { color:var(--oxide); }
+.acc p { margin:0; max-width:64ch; }
+.fix { border-left:3px solid var(--teal); background:var(--teal-soft);
+  padding:16px 20px; border-radius:0 3px 3px 0; margin:0 0 14px; max-width:72rem; }
+.fix h3 { color:var(--teal); }
+.fix p { margin:0; max-width:64ch; }
+
+.strata { border:1px solid var(--rule); border-radius:3px; overflow:hidden;
+  margin:0 0 16px; max-width:68rem; background:var(--card);
+  display:grid; grid-template-columns:max-content minmax(0,1fr); }
+.strata > div { border-bottom:1px solid var(--rule-soft); padding:13px 18px; }
+.strata > div:nth-last-child(-n+2) { border-bottom:0; }
+.band-n { font-family:"IBM Plex Mono",monospace; font-size:1.02rem; font-weight:500;
+  white-space:nowrap; }
+.band-d { font-size:1.04rem; color:var(--muted); border-left:1px solid var(--rule-soft); }
+.strata .hi { background:var(--teal-soft); }
+.strata .band-n.hi { color:var(--teal); }
+
+.flow { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:0 0 18px; }
+.step { background:var(--card); border:1px solid var(--rule); border-radius:3px;
+  padding:11px 16px; font-family:"IBM Plex Mono",monospace; font-size:1rem; }
+.step.on { border-color:var(--teal); color:var(--teal); background:var(--teal-soft); }
+.arrow { color:var(--muted); }
+
+pre { background:var(--card); border:1px solid var(--rule-soft);
+  border-left:3px solid var(--teal); border-radius:0 3px 3px 0;
+  padding:14px 18px; overflow-x:auto; margin:0 0 12px; max-width:76rem; }
+code { font-family:"IBM Plex Mono",monospace; font-size:1rem; line-height:1.8; }
+pre.bad { border-left-color:var(--oxide); }
+.cap { font-size:1.02rem; color:var(--muted); margin:0 0 18px; }
+
+.qa { border:1px solid var(--rule); border-left:3px solid var(--ink);
+  border-radius:0 3px 3px 0; padding:18px 22px; margin:0 0 16px; background:var(--card);
+  max-width:76rem; }
+.qa .q { display:flex; gap:12px; margin-bottom:12px; }
+.qa .a { display:flex; gap:12px; margin-bottom:14px; }
+.qa .mk { font-family:"IBM Plex Mono",monospace; font-weight:600; color:var(--muted);
+  flex:0 0 1.4em; font-size:1.1rem; }
+.qa .q p, .qa .a p { margin:0; font-size:1.12rem; max-width:70ch; }
+.qa .q p { font-weight:600; }
+.qa .meta { border-top:1px solid var(--rule-soft); padding-top:12px;
+  display:flex; flex-direction:column; gap:6px; }
+.qa .meta div { font-size:1rem; color:var(--muted); }
+.qa .meta b { font-family:"IBM Plex Mono",monospace; font-size:.85rem; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted); margin-right:10px; font-weight:600; }
+.qa .meta .tail { color:var(--teal); }
+.qa .do { margin-top:14px; border-top:1px dashed var(--teal); padding-top:14px; }
+.qa .do .k { font-family:"IBM Plex Mono",monospace; font-size:.85rem; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--teal); font-weight:600; margin-bottom:8px; }
+.qa .do p { margin:0; font-size:1.04rem; color:var(--ink); max-width:70ch; }
+
+/* 폴더 트리.
+   세로선을 │ 글자로 그리면 줄 사이가 뚫린다. 글자는 줄 높이를 안 채우기 때문이다.
+   그래서 선은 CSS 의 border-left 로 그린다. 그러면 끊기지 않는다. */
+.tree { border:1px solid var(--rule); border-radius:3px; margin:0 0 20px;
+  background:var(--card); padding:14px 0; max-width:68rem;
+  display:grid; grid-template-columns:max-content minmax(0,1fr); }
+.tree .t { font-family:"IBM Plex Mono",monospace; font-size:1.04rem; font-weight:500;
+  color:var(--teal); white-space:nowrap; padding:6px 28px 6px 24px; }
+.tree .d { font-size:1.02rem; color:var(--muted); padding:6px 24px 6px 0; }
+.tree .root { grid-column:1 / -1; font-family:"IBM Plex Mono",monospace; font-size:1.06rem;
+  font-weight:600; color:var(--ink); padding:7px 24px; }
+.tree .hi { background:var(--teal-soft); }
+.tree .t.hi { font-weight:700; }
+
+/* 파일 구조표.
+   왼쪽 배지가 '무엇인가'(설명글 · import · 설정값 · 함수 · 실행문),
+   가운데가 코드에 그대로 있는 이름, 오른쪽이 그게 하는 일이다.
+
+   칸 사이에 세로선을 긋는다. 격자에 gap 을 주면 선이 못 붙으니 gap 을 0 으로 두고
+   칸마다 padding 을 준 뒤 border-left 로 긋는다. 격자 칸은 세로로 늘어나므로
+   선이 줄 높이를 다 채운다.
+
+   가운데 칸은 절대 줄바꿈하지 않는다. 함수 이름이 중간에서 끊기면 못 읽는다.
+   그래서 max-content 로 잡고 nowrap 을 건다. 창이 좁으면 표가 가로로 밀린다.
+
+   배지 색은 두 가지만 쓴다. 청록은 정의(불러야 도는 것),
+   먹색은 실행문(파일을 열면 바로 도는 것). 나머지는 회색이다. */
+.anat { border:1px solid var(--rule); border-radius:3px; background:var(--card);
+  margin:0 0 14px; overflow-x:auto; }
+.anat .hd { display:flex; flex-wrap:wrap; gap:6px 18px; justify-content:space-between;
+  align-items:baseline; padding:11px 18px; background:var(--paper);
+  border-bottom:1px solid var(--rule); }
+.anat .hd .f { font-family:"IBM Plex Mono",monospace; font-size:1.06rem; font-weight:600;
+  color:var(--ink); white-space:nowrap; }
+.anat .hd .m { font-size:.98rem; color:var(--muted); }
+/* 표 전체가 격자 하나다. 줄마다 격자를 따로 만들면 칸 너비가 줄마다 따로 정해져
+   세로선이 지그재그가 된다. 그래서 셀을 전부 한 격자에 넣는다 */
+.anat .rows { display:grid; grid-template-columns:max-content max-content minmax(18rem,1fr); }
+.anat .rows > div { border-bottom:1px solid var(--rule-soft); }
+.anat .rows > div:nth-last-child(-n+3) { border-bottom:0; }
+.anat .c-g { padding:10px 16px 10px 18px; }
+.anat .c-g .g { display:block; font-size:.76rem; letter-spacing:.04em; font-weight:600;
+  border-radius:2px; padding:2px 8px; text-align:center; white-space:nowrap; }
+.g-doc, .g-imp, .g-set { color:var(--muted); background:var(--rule-soft); }
+.g-fn, .g-cls { color:var(--teal); background:var(--teal-soft); }
+.g-run { color:var(--paper); background:var(--ink); }
+.anat .c-n { font-family:"IBM Plex Mono",monospace; font-size:1rem; color:var(--ink);
+  white-space:nowrap; padding:10px 20px; border-left:1px solid var(--rule-soft); }
+.anat .c-d { font-size:1rem; color:var(--muted);
+  padding:10px 20px; border-left:1px solid var(--rule-soft); }
+
+/* 들어오는 것 · 하는 일 · 나가는 것.
+   파일마다 같은 자리에 같은 모양으로 나오게 해서 서로 견줄 수 있게 한다 */
+.io { display:grid; grid-template-columns:1fr 2rem 1.15fr 2rem 1fr;
+  align-items:stretch; margin:0 0 18px; max-width:80rem; }
+.io .box { border:1px solid var(--rule); border-radius:3px; background:var(--card);
+  padding:14px 18px; }
+.io .box.mid { border-color:var(--teal); background:var(--teal-soft); }
+.io .k { font-size:.78rem; letter-spacing:.1em; color:var(--muted); font-weight:600;
+  margin-bottom:8px; }
+.io .box.mid .k { color:var(--teal); }
+.io ul { margin:0; padding-left:1.05rem; }
+.io li { font-size:1.02rem; margin-bottom:3px; max-width:none; }
+.io p { margin:0; font-size:1.06rem; max-width:none; }
+.io .ar { display:flex; align-items:center; justify-content:center;
+  color:var(--muted); font-size:1.3rem; }
+
+/* 실행 구간이 어떤 함수를 부르는가 */
+.calls { border:1px solid var(--rule); border-radius:3px; background:var(--card);
+  margin:0 0 16px; max-width:84rem; }
+.calls { display:grid; grid-template-columns:max-content minmax(0,1fr); }
+.calls > div { border-bottom:1px solid var(--rule-soft); }
+.calls > div:nth-last-child(-n+2) { border-bottom:0; }
+.calls .s { padding:12px 18px; }
+.calls .s b { display:block; font-size:1.04rem; font-weight:600; }
+.calls .s span { display:block; font-size:.96rem; color:var(--muted); }
+.calls .fns { padding:14px 18px; border-left:1px solid var(--rule-soft);
+  display:flex; flex-wrap:wrap; gap:7px; align-content:flex-start; }
+.calls .none { font-size:1rem; color:var(--muted); }
+.fn { font-family:"IBM Plex Mono",monospace; font-size:.95rem; color:var(--teal);
+  background:var(--teal-soft); border:1px solid var(--teal); border-radius:2px;
+  padding:1px 9px; white-space:nowrap; height:max-content; }
+
+/* 함수를 역할별로 묶어 보여 준다 */
+.groups { display:grid; grid-template-columns:repeat(auto-fit,minmax(255px,1fr));
+  gap:14px; margin:0 0 16px; max-width:84rem; }
+.groups .gr { border:1px solid var(--rule-soft); border-radius:3px; background:var(--card);
+  padding:15px 17px; box-shadow:var(--shadow); }
+.groups h3 { font-size:1.06rem; margin-bottom:10px; }
+.groups .fns { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.groups p { margin:0; font-size:1.02rem; color:var(--muted); max-width:none; }
+
+/* 낱말 풀이. 표처럼 줄만 긋는다 */
+.terms { border-top:1px solid var(--rule); margin:0 0 18px; max-width:72rem;
+  display:grid; grid-template-columns:max-content minmax(0,1fr); }
+.terms > div { border-bottom:1px solid var(--rule-soft); padding:11px 0; }
+.terms .k { font-family:"IBM Plex Mono",monospace; font-size:1.02rem; font-weight:500;
+  color:var(--teal); white-space:nowrap; padding-right:28px; }
+.terms .p { font-size:1.04rem; color:var(--muted); max-width:64ch; }
+
+/* 함수 슬라이드. 제목이 곧 함수 이름이다 */
+h2.fn-title { font-family:"IBM Plex Mono",monospace; font-weight:600;
+  font-size:clamp(1.5rem,2.8vw,2.05rem); letter-spacing:-.01em; max-width:none; }
+.sig { border:1px solid var(--rule); border-radius:3px; background:var(--card);
+  margin:0 0 18px; max-width:80rem;
+  display:grid; grid-template-columns:max-content max-content minmax(0,1fr); }
+.sig > div { border-bottom:1px solid var(--rule-soft); padding:11px 20px; }
+.sig > div:nth-last-child(-n+3) { border-bottom:0; }
+.sig .k { font-size:.82rem; letter-spacing:.08em; color:var(--muted); font-weight:600;
+  white-space:nowrap; }
+.sig .v { font-family:"IBM Plex Mono",monospace; font-size:1rem; color:var(--ink);
+  white-space:nowrap; border-left:1px solid var(--rule-soft); }
+.sig .d { font-size:1.02rem; color:var(--muted); border-left:1px solid var(--rule-soft); }
+
+/* 배우고 나면 할 수 있는 것 */
+.goals { margin:0 0 18px; max-width:72rem; border-top:1px solid var(--rule); }
+.goals .go { display:grid; grid-template-columns:2.4rem minmax(0,1fr); gap:16px;
+  padding:13px 0; border-bottom:1px solid var(--rule-soft); align-items:baseline; }
+.goals .no { font-family:"IBM Plex Mono",monospace; color:var(--teal); font-weight:600;
+  font-size:1.04rem; }
+.goals .tx { font-size:1.14rem; }
+
+.fig { margin:0 0 20px; max-width:84rem; }
+.fig svg { width:100%; height:auto; display:block; }
+.fig svg text { font-family:"IBM Plex Sans KR",sans-serif; }
+.fig svg .m { font-family:"IBM Plex Mono",monospace; }
+
+.vs { display:grid; grid-template-columns:repeat(auto-fit,minmax(255px,1fr)); gap:20px;
+  margin:0 0 16px; max-width:76rem; }
+
+table { border-collapse:collapse; width:100%; font-size:1.04rem; }
+th, td { text-align:left; padding:9px 14px; border-bottom:1px solid var(--rule-soft);
+  vertical-align:top; }
+th { font-size:.86rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+th + th, td + td { border-left:1px solid var(--rule-soft); }
+td.n { font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; text-align:right; }
+.scroll { overflow-x:auto; margin:0 0 16px; max-width:84rem; }
+
+.drill { border:1px dashed var(--teal); border-radius:3px; padding:18px 20px;
+  background:var(--teal-soft); margin:0 0 14px; max-width:72rem; }
+.drill .k { font-size:13px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--teal); font-weight:600; margin-bottom:8px; }
+.drill p { margin:0; max-width:64ch; }
+.drill pre { background:var(--card); }
+
+ul { margin:0 0 14px; padding-left:1.1rem; }
+li { margin-bottom:8px; font-size:1.14rem; max-width:60ch; }
+li::marker { color:var(--muted); }
+
+.bar { position:fixed; left:56px; right:0; bottom:0; height:44px; background:var(--paper);
+  border-top:1px solid var(--rule-soft); display:flex; align-items:center;
+  justify-content:space-between; padding:0 20px; font-size:13px; color:var(--muted); z-index:5; }
+.bar button { font:inherit; color:var(--muted); background:none; border:1px solid var(--rule);
+  border-radius:3px; padding:3px 10px; cursor:pointer; }
+.bar button:hover { color:var(--ink); border-color:var(--muted); }
+.bar button:focus-visible, .idx li:focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
+.prog { position:fixed; left:56px; right:0; bottom:44px; height:2px; background:var(--rule-soft); z-index:5; }
+.prog i { display:block; height:100%; background:var(--teal); transition:width .25s ease; }
+
+.idx { position:fixed; inset:0; background:var(--paper); z-index:20; padding:40px 40px 40px 84px;
+  overflow-y:auto; display:none; }
+.idx.on { display:block; }
+.idx ol { list-style:none; padding:0; margin:0; max-width:76rem; columns:2; column-gap:36px; }
+.idx li { break-inside:avoid; padding:7px 0; border-bottom:1px solid var(--rule-soft);
+  cursor:pointer; font-size:1.02rem; display:flex; gap:12px; }
+.idx li:hover { color:var(--teal); }
+.idx li span { font-family:"IBM Plex Mono",monospace; color:var(--muted); font-size:.95rem; min-width:2.4em; }
+.idx li.ch { font-weight:600; border-bottom-color:var(--rule); }
+
+@media (max-width:1100px) {
+  .anat .rows { grid-template-columns:max-content max-content minmax(13rem,1fr); }
+}
+@media (max-width:820px) {
+  .io { grid-template-columns:1fr; gap:10px; }
+  .io .ar { transform:rotate(90deg); }
+  .calls { grid-template-columns:minmax(0,1fr); }
+  .calls .fns { border-left:0; }
+}
+@media (max-width:760px) {
+  .rail { display:none; }
+  .stage { padding:32px 20px 80px; }
+  .bar, .prog { left:0; }
+  .idx { padding:32px 20px; }
+  .anat { font-size:.94rem; }
+  .terms, .sig { grid-template-columns:minmax(0,1fr); }
+  .terms > div, .sig > div { border-left:0; }
+  .idx ol { columns:1; }
+}
+</style>
+
+<div class="deck">
+  <div class="rail">
+    <div class="rail-ch">e3 core · domain</div>
+    <div class="rail-no" id="railno">1</div>
+  </div>
+  <div class="stage" id="stage"></div>
+  <div class="prog"><i id="prog"></i></div>
+  <div class="bar">
+    <span>쉬운 편 · 3편 core · domain · repositories · adapters</span>
+    <span><button id="idxbtn">목차 M</button> &nbsp; <span id="count"></span></span>
+  </div>
+  <div class="idx" id="idx"><h2>목차</h2><ol id="idxlist"></ol></div>
+</div>
+
+<script>
+const S = [
+ {
+  "layout": "cover",
+  "eyebrow": "쉬운 편 · 3편",
+  "num": "03",
+  "title": "서버의 아래층",
+  "lead": "요청이 올 때마다 도는 코드 중에서 제일 밑에 깔린 것들입니다. 설정 · DB 연결 · 순수한 계산 · 저장소. 네 폴더를 봅니다."
+ },
+ {
+  "eyebrow": "이 편의 목표",
+  "title": "다 보고 나면 이렇게 됩니다",
+  "blocks": [
+   {
+    "goals": [
+     {
+      "n": "01",
+      "t": "네 폴더가 각각 무엇이 모인 곳인지 한 줄로 말합니다"
+     },
+     {
+      "n": "02",
+      "t": "\"포트\" 가 무엇인지, 왜 <code>domain/</code> 에 있는지 압니다"
+     },
+     {
+      "n": "03",
+      "t": "SQL 이 왜 한 폴더에만 있어야 하는지 말합니다"
+     },
+     {
+      "n": "04",
+      "t": "설정 한 글자로 로컬과 상용이 갈리는 자리를 짚습니다"
+     }
+    ]
+   },
+   {
+    "p": "낯선 말이 제일 많이 나오는 편입니다. <strong>모르는 말이 나오면 그 자리에서 풉니다.</strong> 쌓아 두고 나중에 풀지 않습니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "이 편의 지도",
+  "title": "네 폴더의 자리",
+  "blocks": [
+   {
+    "fig": "<svg viewBox=\"0 0 940 350\" role=\"img\" aria-label=\"app 안 여섯 폴더 중 아래 네 개\">\n  <text x=\"0\" y=\"16\" font-size=\"14\" fill=\"var(--muted)\">이번 편에서 보는 자리를 색으로 칠했습니다</text>\n  <rect x=\"0\" y=\"28\" width=\"930\" height=\"46\" rx=\"4\" fill=\"var(--card)\" stroke=\"var(--rule)\" stroke-width=\"1.5\"/>\n  <text class=\"m\" x=\"22\" y=\"57\" font-size=\"14.5\" fill=\"var(--muted)\">app/api/</text>\n  <text x=\"220\" y=\"57\" font-size=\"13.5\" fill=\"var(--muted)\">주소를 받는 창구 · 4편에서 봅니다</text>\n  <rect x=\"0\" y=\"82\" width=\"930\" height=\"46\" rx=\"4\" fill=\"var(--card)\" stroke=\"var(--rule)\" stroke-width=\"1.5\"/>\n  <text class=\"m\" x=\"22\" y=\"111\" font-size=\"14.5\" fill=\"var(--muted)\">app/features/</text>\n  <text x=\"220\" y=\"111\" font-size=\"13.5\" fill=\"var(--muted)\">조립하는 자리 · 4편에서 봅니다</text>\n  <rect x=\"0\" y=\"136\" width=\"456\" height=\"64\" rx=\"4\" fill=\"var(--teal-soft)\" stroke=\"var(--teal)\" stroke-width=\"2\"/>\n  <text class=\"m\" x=\"22\" y=\"164\" font-size=\"14.5\" fill=\"var(--teal)\">app/repositories/</text>\n  <text x=\"22\" y=\"188\" font-size=\"13\" fill=\"var(--muted)\">DB 에 묻는 자리. SQL 이 여기에만</text>\n  <rect x=\"474\" y=\"136\" width=\"456\" height=\"64\" rx=\"4\" fill=\"var(--teal-soft)\" stroke=\"var(--teal)\" stroke-width=\"2\"/>\n  <text class=\"m\" x=\"496\" y=\"164\" font-size=\"14.5\" fill=\"var(--teal)\">app/adapters/</text>\n  <text x=\"496\" y=\"188\" font-size=\"13\" fill=\"var(--muted)\">바깥과 이야기하는 자리. LLM · 벡터</text>\n  <rect x=\"0\" y=\"208\" width=\"930\" height=\"58\" rx=\"4\" fill=\"var(--teal-soft)\" stroke=\"var(--teal)\" stroke-width=\"2\"/>\n  <text class=\"m\" x=\"22\" y=\"236\" font-size=\"14.5\" fill=\"var(--teal)\">app/core/</text>\n  <text x=\"220\" y=\"236\" font-size=\"13.5\" fill=\"var(--muted)\">다 같이 쓰는 밑바닥. 설정 · DB 연결 · 임베딩기 · 인증 · 기록</text>\n  <text x=\"22\" y=\"256\" font-size=\"13\" fill=\"var(--muted)\">6개 파일 · 620줄</text>\n  <rect x=\"0\" y=\"274\" width=\"930\" height=\"58\" rx=\"4\" fill=\"var(--oxide-soft)\" stroke=\"var(--oxide)\" stroke-width=\"2\"/>\n  <text class=\"m\" x=\"22\" y=\"302\" font-size=\"14.5\" fill=\"var(--oxide)\">app/domain/</text>\n  <text x=\"220\" y=\"302\" font-size=\"13.5\" fill=\"var(--muted)\">순수한 계산. DB 도 인터넷도 LLM 도 모릅니다</text>\n  <text x=\"22\" y=\"322\" font-size=\"13\" fill=\"var(--muted)\">5개 파일 · 232줄</text>\n</svg>"
+   },
+   {
+    "p": "설명하는 순서는 <code>core</code> → <code>domain</code> → <code>repositories</code> → <code>adapters</code> 입니다. <strong>앞에서 안 본 것을 뒤에서 안 쓰게 되는 순서</strong>로 잡았습니다."
+   }
+  ]
+ },
+ {
+  "layout": "statement",
+  "text": "app/core/ — 다 같이 쓰는 밑바닥입니다.",
+  "sub": "여기 있는 것은 기능이 아닙니다. 다른 데서 계속 필요한 것들입니다."
+ },
+ {
+  "eyebrow": "app/core/",
+  "title": "여섯 파일이 있습니다",
+  "blocks": [
+   {
+    "tree": [
+     {
+      "root": "app/core/"
+     },
+     {
+      "t": "config.py",
+      "d": "설정. 환경변수를 읽어 무엇으로 돌지 정합니다",
+      "hi": true
+     },
+     {
+      "t": "db.py",
+      "d": "DB 연결과 SQL 을 실제로 실행하는 자리"
+     },
+     {
+      "t": "embedder.py",
+      "d": "글을 벡터로 바꾸는 도구 하나를 만들어 나눠 씁니다"
+     },
+     {
+      "t": "auth.py",
+      "d": "이 요청을 받아도 되는가"
+     },
+     {
+      "t": "usage.py",
+      "d": "누가 얼마나 썼나. 하루 한도"
+     },
+     {
+      "t": "trace.py",
+      "d": "LLM 호출을 기록합니다"
+     }
+    ]
+   },
+   {
+    "p": "여기 있는 것들의 공통점은 <strong>\"하나만 있으면 되는 것\"</strong> 입니다. DB 연결도 하나, 임베딩기도 하나, 설정도 하나입니다. 그래서 각 파일이 그 하나를 만들어 두고 나눠 줍니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/core/config.py",
+  "title": "설정 한 글자로 갈립니다",
+  "lead": "이 프로젝트는 로컬로도 돌고 상용으로도 돕니다. 코드는 안 바뀌고 <code>.env</code> 의 한 줄이 바뀝니다.",
+  "blocks": [
+   {
+    "table": {
+     "head": [
+      "",
+      "USE_API=0 (로컬)",
+      "USE_API=1 (상용)"
+     ],
+     "rows": [
+      [
+       "LLM",
+       "내 컴퓨터의 Ollama · qwen-cpu",
+       "OpenAI · gpt-4o-mini"
+      ],
+      [
+       "임베딩",
+       "multilingual-e5-small",
+       "text-embedding-3-small"
+      ],
+      [
+       "벡터 차원",
+       "384",
+       "1536"
+      ],
+      [
+       "한 번에 받는 토큰",
+       "512",
+       "8,191"
+      ],
+      [
+       "DB 파일",
+       "<code>cosmetic.db</code>",
+       "<code>cosmetic-api.db</code>"
+      ],
+      [
+       "돈",
+       "안 듭니다",
+       "듭니다"
+      ]
+     ]
+    }
+   },
+   {
+    "fix": "DB 파일이 갈려 있는 것이 요점입니다",
+    "body": "로컬 벡터는 384개짜리 숫자이고 상용은 1536개짜리입니다. <strong>한 표에 못 섞습니다.</strong> 그래서 백엔드를 바꾸면 DB 파일도 자동으로 갈립니다. 섞여서 이상한 결과가 나오는 일이 아예 안 생깁니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/core/config.py",
+  "title": "설정을 읽는 함수 넷",
+  "blocks": [
+   {
+    "anat": {
+     "file": "app/core/config.py",
+     "meta": "123줄 · 함수 4개",
+     "rows": [
+      {
+       "g": "fn",
+       "n": "load_env(path)",
+       "d": ".env 파일을 읽어 올립니다"
+      },
+      {
+       "g": "fn",
+       "n": "env(name, default)",
+       "d": "값을 읽되 빈 칸은 없는 것으로 칩니다"
+      },
+      {
+       "g": "fn",
+       "n": "env_bool(name, default)",
+       "d": "참거짓 값. 모르는 값은 거절합니다"
+      },
+      {
+       "g": "fn",
+       "n": "_check_prod()",
+       "d": "운영일 때만 거는 검사"
+      },
+      {
+       "g": "set",
+       "n": "USE_API · LLM_MODEL · DB_PATH ...",
+       "d": "정해진 값들. 다른 파일이 이걸 가져다 씁니다"
+      },
+      {
+       "g": "run",
+       "n": "load_env() · if IS_PROD: _check_prod()",
+       "d": "파일을 불러오는 순간 바로 돕니다"
+      }
+     ]
+    }
+   },
+   {
+    "p": "<strong>맨 아랫줄이 중요합니다.</strong> 이 파일은 함수를 정의만 하고 끝나는 게 아니라 불러오는 순간 실제로 검사를 돌립니다. 그래서 설정이 틀리면 <strong>서버가 아예 안 뜹니다.</strong>"
+   }
+  ]
+ },
+ {
+  "eyebrow": "재미있는 지점",
+  "title": "모르는 값을 조용히 넘기지 않습니다",
+  "blocks": [
+   {
+    "code": "def env_bool(name, default):\n    value = env(name, default).lower()\n    if value in TRUE_WORDS:  return True\n    if value in FALSE_WORDS: return False\n    raise RuntimeError(f\"{name} 값이 '{value}' 다. ...\")",
+    "cap": "<code>1 · true · yes · on · y</code> 는 참, <code>0 · false · no · off · n</code> 은 거짓. 나머지는 오류입니다"
+   },
+   {
+    "acc": "이 줄이 없으면 이렇게 됩니다",
+    "body": "<code>PRODUCT_WRITE_ENABLED=ture</code> 라고 오타를 냈다고 합시다. \"참이 아닌 값 = 거짓\" 으로 처리하면 <strong>상품 쓰기가 조용히 꺼집니다.</strong> 서버는 잘 뜨고, 나중에 상품을 못 고치는데 왜 그런지 아무도 모릅니다."
+   },
+   {
+    "fix": "그래서 뜰 때 거절합니다",
+    "body": "오타를 낸 사람이 <strong>그 자리에서</strong> 무엇이 틀렸는지 봅니다. 며칠 뒤에 이상한 증상으로 만나는 것보다 낫습니다. 이 규칙을 지키는 시험이 <code>tests/test_config.py</code> 에 19개 있습니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/core/config.py",
+  "title": "운영에서만 거는 검사",
+  "blocks": [
+   {
+    "list": [
+     "<code>USE_API=1</code> 인데 API 열쇠가 비어 있으면 안 뜹니다",
+     "<code>DB_PATH</code> 를 안 적었으면 안 뜹니다. 기본값이 소스 폴더 안이라 다시 배포하면 데이터가 사라집니다",
+     "서비스 토큰이 기본값 <code>dev-token</code> 이면 안 뜹니다. 공개된 값이라 인증이 없는 것과 같습니다"
+    ]
+   },
+   {
+    "p": "셋 다 <strong>개발 중에는 그냥 넘어갑니다.</strong> <code>APP_ENV=prod</code> 일 때만 막습니다. 개발하다가 매번 걸리면 사람들이 검사를 꺼 버리기 때문입니다."
+   },
+   {
+    "fix": "\"뜨지 않는 것\" 이 제일 안전한 실패입니다",
+    "body": "잘못된 설정으로 서버가 뜨면 <strong>틀린 채로 서비스가 됩니다.</strong> 안 뜨면 아무 일도 안 일어납니다. 배포하는 사람이 바로 알아챕니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/core/db.py",
+  "title": "DB 에 실제로 말을 거는 자리",
+  "lead": "SQL 문장을 만드는 곳이 아닙니다. <strong>남이 만들어 준 SQL 을 실행해 주는 곳</strong>입니다.",
+  "blocks": [
+   {
+    "groups": [
+     {
+      "h": "연결",
+      "fns": [
+       "connection"
+      ],
+      "p": "이 작업 줄기에 연결이 없으면 만들고, 있으면 그걸 씁니다"
+     },
+     {
+      "h": "읽기",
+      "fns": [
+       "query",
+       "one",
+       "dicts"
+      ],
+      "p": "여러 줄 · 한 줄 · 컬럼 이름이 붙은 딕셔너리. 셋 중에 골라 씁니다"
+     },
+     {
+      "h": "쓰기",
+      "fns": [
+       "execute",
+       "insert",
+       "executemany"
+      ],
+      "p": "고치고 · 넣고 새 번호를 받고 · 여러 개를 한 번에"
+     },
+     {
+      "h": "묶기",
+      "fns": [
+       "transaction",
+       "_in_transaction"
+      ],
+      "p": "여러 문장을 한 덩어리로. 중간에 터지면 통째로 되돌립니다"
+     }
+    ]
+   },
+   {
+    "p": "아홉 개뿐입니다. <strong>SQL 문장은 하나도 없습니다.</strong> 문장은 <code>app/repositories/</code> 가 만들고, 이 파일은 받아서 돌리기만 합니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/core/db.py",
+  "title": "왜 transaction 이 필요한가",
+  "blocks": [
+   {
+    "p": "상품 하나를 지운다고 합시다. 지워야 할 것이 세 군데입니다."
+   },
+   {
+    "flow": [
+     {
+      "t": "products 행"
+     },
+     {
+      "t": "chunks 조각들"
+     },
+     {
+      "t": "벡터들",
+      "on": true
+     }
+    ]
+   },
+   {
+    "acc": "두 번째에서 터지면",
+    "body": "상품은 지워졌는데 조각과 벡터는 남습니다. <strong>검색하면 없는 상품이 나옵니다.</strong> 화면은 그 상품을 못 여는데 검색에는 뜹니다. 이런 어긋남은 나중에 찾기가 아주 어렵습니다."
+   },
+   {
+    "code": "with transaction():\n    ...   # 세 개를 다 지운다",
+    "cap": "이 안에서 하나라도 터지면 앞의 것까지 통째로 되돌립니다"
+   },
+   {
+    "p": "<strong>전부 되거나 전부 안 되거나</strong> 둘 중 하나만 남깁니다. 반쯤 된 상태가 안 생깁니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/core/embedder.py",
+  "title": "임베딩기는 하나만 만듭니다",
+  "blocks": [
+   {
+    "p": "글을 벡터로 바꾸는 모델은 로컬일 때 <strong>449MB</strong> 입니다. 요청마다 새로 올리면 아무것도 못 합니다. 그래서 한 번 만들어 두고 계속 씁니다."
+   },
+   {
+    "anat": {
+     "file": "app/core/embedder.py",
+     "meta": "85줄 · 클래스 1개 · 함수 4개",
+     "rows": [
+      {
+       "g": "cls",
+       "n": "_Metered",
+       "d": "임베딩 호출을 세는 껍데기. 값은 안 바꿉니다"
+      },
+      {
+       "g": "fn",
+       "n": "_build()",
+       "d": "진짜 임베딩기를 만듭니다. 로컬이냐 상용이냐가 여기서 갈립니다"
+      },
+      {
+       "g": "fn",
+       "n": "get_embeddings()",
+       "d": "만들어 둔 것을 돌려줍니다. 없으면 그때 만듭니다"
+      },
+      {
+       "g": "fn",
+       "n": "is_loaded()",
+       "d": "이미 올라왔나. 준비 점검이 묻습니다"
+      },
+      {
+       "g": "fn",
+       "n": "warm_up()",
+       "d": "뜰 때 미리 올립니다"
+      }
+     ]
+    }
+   },
+   {
+    "fix": "warm_up 이 없으면",
+    "body": "서버는 금방 뜹니다. 그런데 <strong>첫 손님이 449MB 를 지고 갑니다.</strong> 첫 요청만 유독 오래 걸립니다. 그래서 뜰 때 아무 글이나 한 번 벡터로 만들어 봅니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "재미있는 지점",
+  "title": "껍데기를 하나 씌워 두었습니다",
+  "blocks": [
+   {
+    "p": "<code>_Metered</code> 는 진짜 임베딩기를 감싸고 있습니다. 부르면 <strong>시간만 재고 그대로 넘깁니다.</strong> 값은 한 글자도 안 바꿉니다."
+   },
+   {
+    "code": "def __getattr__(self, name):\n    return getattr(self._inner, name)",
+    "cap": "내가 모르는 것을 물으면 안에 있는 진짜에게 그대로 넘깁니다"
+   },
+   {
+    "fix": "이 두 줄이 있어야 껍데기가 안 좁아집니다",
+    "body": "껍데기가 <code>embed_query</code> 와 <code>embed_documents</code> 만 안다고 합시다. 그럼 원래 임베딩기가 가진 다른 기능을 쓸 수 없게 됩니다. <strong>감싸면서 기능을 줄이면 안 됩니다.</strong>"
+   },
+   {
+    "acc": "다만 못 재는 것이 있습니다",
+    "body": "임베딩 호출은 <strong>토큰 수를 안 돌려줍니다.</strong> 그래서 그 줄의 원가가 0 으로 남습니다. 추정해서 채우지 않습니다. 모르는 것은 모르는 채로 둡니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/core/auth.py",
+  "title": "이 서버는 로그인을 안 합니다",
+  "lead": "생각보다 중요한 결정입니다.",
+  "blocks": [
+   {
+    "code": "Authorization: Bearer &lt;서비스 토큰&gt;    이 서버를 부를 자격\nX-User-Id: &lt;사용자 id&gt;              누구를 대신해 부르나",
+    "cap": "요청에 이 두 줄이 있어야 합니다"
+   },
+   {
+    "p": "<strong>로그인은 앞단 서버의 일입니다.</strong> 이 서버는 그 결과를 헤더로 전해 받습니다. \"이 요청은 C001 고객을 대신해 부르는 것이다\" 라고 앞단이 말해 주는 것입니다."
+   },
+   {
+    "fix": "그래서 로그인 방식이 바뀌어도 이 파일은 안 바뀝니다",
+    "body": "앞단이 Supabase 를 쓰든 Spring 을 쓰든 여기는 <code>X-User-Id</code> 만 봅니다. 하루 한도와 비용 기록이 이 값을 열쇠로 씁니다."
+   },
+   {
+    "acc": "지금은 화면이 그 토큰을 들고 있습니다",
+    "body": "<code>web/index.html</code> 이 앞단 노릇을 하느라 토큰을 갖고 있습니다. <strong>그대로 공개 배포하면 안 됩니다.</strong> 앞단 서버를 세우거나 쓰기 API 를 닫아야 합니다. 이건 README 에 그대로 적혀 있습니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/core/usage.py",
+  "title": "먼저 잡고 나중에 채웁니다",
+  "lead": "하루 한도가 50번입니다. 이걸 세는 방식이 조금 특이합니다.",
+  "blocks": [
+   {
+    "flow": [
+     {
+      "t": "reserve — 칸을 먼저 잡는다",
+      "on": true
+     },
+     {
+      "t": "LLM 을 부른다"
+     },
+     {
+      "t": "settle — 실제로 든 것을 적는다"
+     }
+    ]
+   },
+   {
+    "p": "LLM 을 부르기 <strong>전에</strong> 한 칸을 잡습니다. 한도를 넘었으면 그 자리에서 429 로 돌려보냅니다. 부르고 나서 세면 이미 돈을 쓴 뒤라 늦습니다."
+   },
+   {
+    "table": {
+     "head": [
+      "함수",
+      "언제"
+     ],
+     "rows": [
+      [
+       "<code>reserve</code>",
+       "LLM 을 부르기 전. 자리를 잡습니다"
+      ],
+      [
+       "<code>settle</code>",
+       "부르고 나서. 토큰 수와 원가를 채웁니다"
+      ],
+      [
+       "<code>record</code>",
+       "예약 없이 한 번에 적습니다. 임베딩 호출이 이걸 씁니다"
+      ],
+      [
+       "<code>used_today</code>",
+       "오늘 몇 번 썼나"
+      ],
+      [
+       "<code>cost_of</code>",
+       "토큰 수를 돈으로. 모르면 0 입니다"
+      ]
+     ]
+    }
+   },
+   {
+    "fix": "값이 오는 자리가 하나 더 있습니다",
+    "body": "<code>PRICING</code> 표에 모델별 단가가 적혀 있고 <code>PRICING_AS_OF</code> 에 <strong>언제 기준인지</strong>가 같이 적혀 있습니다. 단가는 바뀌는 값이라 날짜가 없으면 못 믿습니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/core/trace.py",
+  "title": "LLM 호출을 세 군데에 남깁니다",
+  "blocks": [
+   {
+    "groups": [
+     {
+      "h": "UsageWriter",
+      "fns": [
+       "on_llm_end",
+       "tokens_of"
+      ],
+      "p": "DB 의 <code>usage_log</code> 표에 남깁니다. 누가 · 무슨 기능 · 몇 토큰 · 얼마"
+     },
+     {
+      "h": "UsageCollector",
+      "fns": [
+       "on_llm_end"
+      ],
+      "p": "부른 쪽이 준 그릇에 담아 줍니다. 스트리밍할 때 씁니다"
+     },
+     {
+      "h": "JsonlTracer",
+      "fns": [
+       "_write",
+       "_rotate"
+      ],
+      "p": "<code>runs.jsonl</code> 파일에 한 줄씩 적습니다. 10MB 를 넘으면 한 세대 밀어 둡니다"
+     }
+    ]
+   },
+   {
+    "p": "셋 다 <strong>콜백</strong>입니다. LLM 을 부르는 코드가 이들을 부르는 게 아니라, LangChain 이 호출이 끝날 때 자동으로 불러 줍니다. 그래서 기능을 만드는 사람이 기록을 신경 안 써도 됩니다."
+   },
+   {
+    "fix": "LangSmith 는 켜고 끄는 스위치입니다",
+    "body": "<code>setup_langsmith()</code> 가 뜰 때 한 번 돌아서 <strong>꺼짐 · 키 없음 · 켜짐</strong> 중 하나를 정합니다. 꺼져 있으면 아무것도 안 나갑니다. 켜도 기본은 지표만 보내고 프롬프트 본문은 안 보냅니다."
+   }
+  ]
+ },
+ {
+  "layout": "statement",
+  "text": "app/domain/ — 아무것도 모르는 자리입니다.",
+  "sub": "DB 도 인터넷도 LLM 도 모릅니다. 글자를 받아 글자를 돌려주기만 합니다."
+ },
+ {
+  "eyebrow": "app/domain/",
+  "title": "다섯 파일, 232줄입니다",
+  "blocks": [
+   {
+    "tree": [
+     {
+      "root": "app/domain/"
+     },
+     {
+      "t": "ports.py",
+      "d": "약속. \"저장소는 이런 일을 해 줄 것\"",
+      "hi": true
+     },
+     {
+      "t": "embedding_text.py",
+      "d": "데이터를 검색용 문장 하나로"
+     },
+     {
+      "t": "masking.py",
+      "d": "전화번호와 이름을 가립니다"
+     },
+     {
+      "t": "safety.py",
+      "d": "주의사항 글에서 못 파는 조건을 찾습니다"
+     },
+     {
+      "t": "prompting.py",
+      "d": "LLM 에게 줄 글을 만듭니다"
+     }
+    ]
+   },
+   {
+    "p": "이 폴더의 규칙은 하나입니다. <strong>여기 있는 파일은 <code>app</code> 의 다른 폴더를 한 줄도 안 가리킵니다.</strong> 시험이 그걸 봅니다."
+   },
+   {
+    "code": "def test_domain_은_아무_층도_안_가리킨다():\n    outward = [... if s.startswith(\"app.domain\")\n               and not t.startswith(\"app.domain\")]\n    assert not outward, \"domain 이 밖을 본다\"",
+    "cap": "tests/test_layers.py. import 를 전부 훑어서 봅니다"
+   }
+  ]
+ },
+ {
+  "eyebrow": "왜 이렇게 두나",
+  "title": "아무것도 모르면 시험하기 쉽습니다",
+  "blocks": [
+   {
+    "vs": [
+     {
+      "k": "DB 를 아는 함수",
+      "tone": "pain",
+      "code": "def blocked_for(skin_type):\n    rows = db.query(\"SELECT ...\")\n    ...",
+      "p": "시험하려면 DB 를 준비해야 합니다. 표를 만들고 값을 넣고 지워야 합니다"
+     },
+     {
+      "k": "순수한 함수",
+      "tone": "build",
+      "code": "def blocked_for(skin_type, bans):\n    ...",
+      "p": "값을 넣고 결과를 보면 끝입니다. 준비할 게 없습니다"
+     }
+    ]
+   },
+   {
+    "p": "두 번째 방식은 <strong>DB 에서 읽어 오는 일을 부르는 쪽에 맡깁니다.</strong> 그래서 이 함수는 값이 어디서 왔는지 모릅니다. DB 든 CSV 든 손으로 적은 값이든 상관없습니다."
+   },
+   {
+    "fix": "그래서 시험이 여기에 제일 많이 붙습니다",
+    "body": "102개 중 24개가 이 폴더의 함수를 봅니다 (<code>test_masking</code> 13 · <code>test_safety</code> 6 · <code>test_metrics</code> 5). 준비할 게 없으니 시험을 쓰기가 쉽습니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/domain/embedding_text.py",
+  "title": "데이터를 검색용 문장으로",
+  "blocks": [
+   {
+    "anat": {
+     "file": "app/domain/embedding_text.py",
+     "meta": "37줄 · 함수 4개",
+     "rows": [
+      {
+       "g": "set",
+       "n": "PRODUCT_FIELDS",
+       "d": "상품에서 쓸 컬럼 아홉 개"
+      },
+      {
+       "g": "fn",
+       "n": "product_text(row)",
+       "d": "상품 한 건을 문장 하나로"
+      },
+      {
+       "g": "fn",
+       "n": "top(values, n)",
+       "d": "제일 자주 나온 n 개를 가운뎃점으로 잇습니다"
+      },
+      {
+       "g": "fn",
+       "n": "customer_text(...)",
+       "d": "구매 이력을 취향 한 줄로"
+      },
+      {
+       "g": "fn",
+       "n": "source_hash(text)",
+       "d": "글의 지문. 짧은 글자로 줄입니다"
+      }
+     ]
+    }
+   },
+   {
+    "p": "2편에서 본 것들입니다. 여기 다시 나오는 이유는 <strong>이 함수들이 준비 단계에서도, 요청 단계에서도 쓰이기 때문</strong>입니다."
+   },
+   {
+    "table": {
+     "head": [
+      "부르는 쪽",
+      "언제"
+     ],
+     "rows": [
+      [
+       "<code>pipeline/embed.py</code>",
+       "처음에 전부 벡터로 만들 때"
+      ],
+      [
+       "<code>app/features/products.py</code>",
+       "화면에서 상품을 고쳤을 때"
+      ],
+      [
+       "<code>app/features/embedding_sync.py</code>",
+       "지문을 만들 때"
+      ]
+     ]
+    }
+   },
+   {
+    "p": "셋이 같은 함수를 씁니다. <strong>따로 만들면 언젠가 어긋납니다.</strong> 상품 문장 만드는 규칙이 두 군데에 있으면, 한쪽만 고치는 날이 옵니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/domain/masking.py",
+  "title": "후기에서 개인정보를 가립니다",
+  "lead": "고객이 쓴 후기를 다른 사람에게 보여 줄 때 씁니다. 그런데 이게 생각보다 어렵습니다.",
+  "blocks": [
+   {
+    "anat": {
+     "file": "app/domain/masking.py",
+     "meta": "38줄 · 함수 3개",
+     "rows": [
+      {
+       "g": "set",
+       "n": "PHONE · EMAIL · KAKAO · CONTACT",
+       "d": "찾을 모양 네 가지"
+      },
+      {
+       "g": "fn",
+       "n": "build_address_pattern(cities)",
+       "d": "도시 목록으로 주소 찾는 틀을 만듭니다"
+      },
+      {
+       "g": "fn",
+       "n": "_tidy(text)",
+       "d": "가리고 나서 생긴 빈칸을 정리합니다"
+      },
+      {
+       "g": "fn",
+       "n": "mask(text)",
+       "d": "실제로 가립니다"
+      }
+     ]
+    }
+   },
+   {
+    "code": "text = PHONE.sub(\"[연락처]\", text)\ntext = EMAIL.sub(\"[메일]\", text)\nfor name in names:\n    text = text.replace(name, \"[이름]\")",
+    "cap": "전화번호 · 메일은 모양으로 찾고, 이름은 명단으로 찾습니다"
+   },
+   {
+    "p": "<strong>되돌릴 수 없습니다.</strong> 그래서 DB 에 저장할 때 가리는 게 아니라 <strong>밖으로 나갈 때만</strong> 가립니다. 원본은 그대로 둡니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "실제로 있었던 일",
+  "title": "이름은 모양으로 못 찾습니다",
+  "blocks": [
+   {
+    "acc": "이름이 안 가려진 채 나갔습니다",
+    "body": "전화번호는 <code>010-1234-5678</code> 이라는 모양이 있어서 찾을 수 있습니다. 그런데 <strong>이름에는 모양이 없습니다.</strong> \"민수\" 는 이름이기도 하고 아니기도 합니다. 그래서 처음에는 이름이 그대로 나갔습니다."
+   },
+   {
+    "fix": "우리 고객 명단을 사전으로 씁니다",
+    "body": "<code>customers</code> 표에서 이름을 전부 꺼내 놓고, 후기에 그 이름이 있으면 가립니다. 긴 이름부터 먼저 봅니다 — 짧은 것부터 가리면 긴 이름이 반쯤 남습니다."
+   },
+   {
+    "table": {
+     "head": [
+      "잰 것",
+      "값"
+     ],
+     "rows": [
+      [
+       "전화번호를 하이픈만으로 찾으면",
+       "152건 중 42건만 잡힙니다"
+      ],
+      [
+       "이름 사전 방식으로 안 잡히는 것",
+       "최소 31건이 남습니다"
+      ]
+     ]
+    }
+   },
+   {
+    "p": "<strong>남는 것이 있다고 적어 뒀습니다.</strong> 우리 명단에 없는 이름은 못 잡습니다. \"완벽하게 가립니다\" 라고 말하지 않는 것이 이 저장소의 방식입니다 (<code>docs/measurements.md</code>)."
+   }
+  ]
+ },
+ {
+  "eyebrow": "실제로 있었던 일",
+  "title": "가리는 경로가 둘로 갈려 있었습니다",
+  "lead": "2026년 8월 27일에 찾은 것입니다. 이 편의 규칙이 왜 필요한지를 보여 주는 사고입니다.",
+  "blocks": [
+   {
+    "acc": "LLM 에게 보내는 글만 안 가려져 있었습니다",
+    "body": "<code>app/adapters/llm.py</code> 가 마스킹 함수를 <strong>사전 없이</strong> 부르고 있었습니다. 화면에 보이는 후기는 이름과 주소가 가려져 있는데, <strong>프롬프트에 실려 밖으로 나가는 글은 안 가려져 있었습니다.</strong>"
+   },
+   {
+    "code": "입력              박은수님 010-1234-5678 로 연락주세요. 성남 분당동 삽니다.\nllm.py 가 쓰던 것   성남 분당동 삽니다.\nprivacy 쪽         [주소] 삽니다.",
+    "cap": "같은 글인데 지나는 길에 따라 결과가 달랐습니다"
+   },
+   {
+    "fix": "고친 방식이 요점입니다",
+    "body": "\"llm.py 도 사전을 붙여 부르자\" 가 아니라 <strong>부르는 창구를 하나로 모았습니다.</strong> 앱은 <code>features/privacy.py</code> 의 <code>mask_text</code> 만 부릅니다. 길이 하나면 갈릴 수가 없습니다."
+   },
+   {
+    "p": "<strong>같은 일을 하는 길이 둘이면 언젠가 한쪽만 고쳐집니다.</strong> 이게 이 저장소가 \"창구를 하나로\" 를 반복하는 이유입니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/domain/safety.py",
+  "title": "못 파는 상품을 글에서 찾습니다",
+  "lead": "상품 주의사항에 \"민감성 피부에는 사용을 권하지 않습니다\" 라고 적혀 있으면, 민감성 고객에게 안 권합니다.",
+  "blocks": [
+   {
+    "anat": {
+     "file": "app/domain/safety.py",
+     "meta": "30줄 · 함수 3개",
+     "rows": [
+      {
+       "g": "set",
+       "n": "BAN · SENSITIVE",
+       "d": "금지를 뜻하는 표현들 · \"민감성\""
+      },
+      {
+       "g": "fn",
+       "n": "extract_bans(sections)",
+       "d": "주의사항 글에서 {상품: 금지 문장} 을 만듭니다"
+      },
+      {
+       "g": "fn",
+       "n": "blocked_for(skin_type, bans)",
+       "d": "이 피부 타입에게 막힌 상품 아이디들"
+      },
+      {
+       "g": "fn",
+       "n": "reason_for(product_id, bans)",
+       "d": "왜 막혔는지 근거 문장"
+      }
+     ]
+    }
+   },
+   {
+    "code": "BAN = re.compile(r\"(사용을 권하지 않|사용하지 마|사용을 피하|사용을 삼가|사용 금지)\")",
+    "cap": "다섯 가지 표현을 찾습니다. 문장에 이게 있고 \"민감성\" 도 있으면 금지로 봅니다"
+   },
+   {
+    "fix": "reason_for 가 따로 있는 것이 요점입니다",
+    "body": "막기만 하고 왜 막았는지 안 알려 주면 <strong>사람이 고칠 수가 없습니다.</strong> 화면에 근거 문장을 그대로 띄웁니다. 잘못 막힌 것이면 담당자가 보고 바로 압니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/domain/prompting.py",
+  "title": "LLM 에게 줄 글을 만듭니다",
+  "blocks": [
+   {
+    "anat": {
+     "file": "app/domain/prompting.py",
+     "meta": "45줄 · 함수 3개",
+     "rows": [
+      {
+       "g": "set",
+       "n": "MAX_HISTORY = 8",
+       "d": "구매 이력을 최대 여덟 건까지만"
+      },
+      {
+       "g": "fn",
+       "n": "customer_block(board)",
+       "d": "고객 한 명을 글로"
+      },
+      {
+       "g": "fn",
+       "n": "candidate_block(candidates)",
+       "d": "후보 상품을 번호가 붙은 글로"
+      },
+      {
+       "g": "fn",
+       "n": "build_context(...)",
+       "d": "위의 것들을 자료 칸 하나로 이어 붙입니다"
+      }
+     ]
+    }
+   },
+   {
+    "code": "[고객]\n고객: 34세 여성 · 민감성 피부 · 서울 거주\n구매 8건 · 평균 별점 4.2\n- 수분 크림 (스킨케어, 32,000원, 별점 5) 발림성이 좋았어요\n\n[후보]\n1. 비타민C 세럼 · 브랜드A · 앰플 · 45,000원 ...",
+    "cap": "LLM 이 실제로 받는 글은 이렇게 생겼습니다"
+   },
+   {
+    "p": "후보에 <strong>번호</strong>가 붙어 있는 것이 중요합니다. LLM 에게 상품 이름을 쓰라고 하면 없는 이름을 지어냅니다. <strong>번호로 답하라고 하면 지어낼 수가 없습니다.</strong> 범위를 코드가 검사할 수 있습니다."
+   },
+   {
+    "fix": "여기 들어가는 후기는 이미 가려진 글입니다",
+    "body": "<code>customer_block</code> 이 쓰는 것은 <code>review_masked</code> 입니다. 원본이 아니라 마스킹을 거친 글입니다. <strong>개인정보가 프롬프트에 실려 밖으로 나가는 것을 막는 자리</strong>입니다."
+   }
+  ]
+ },
+ {
+  "layout": "statement",
+  "text": "이제 이 편에서 제일 중요한 파일입니다.",
+  "sub": "ports.py — 82줄인데 함수 본문이 한 줄도 없습니다."
+ },
+ {
+  "eyebrow": "app/domain/ports.py",
+  "title": "포트는 약속입니다",
+  "blocks": [
+   {
+    "code": "class VectorStore(Protocol):\n    # 가까운 것 k 개를 [(아이디, 점수), ...] 로\n    def search(self, kind, query_vector, k, ...) -&gt; list[tuple[str, float]]: ...",
+    "cap": "<code>...</code> 이 본문 전부입니다. 무엇을 할지만 적고 어떻게 할지는 안 적습니다"
+   },
+   {
+    "terms": [
+     {
+      "k": "포트",
+      "p": "\"이런 일을 해 줄 것\" 이라고 적은 약속. 누가 하는지는 안 적습니다"
+     },
+     {
+      "k": "어댑터",
+      "p": "그 약속을 실제로 지키는 코드. 지금은 SQLite 판이 하나 있습니다"
+     },
+     {
+      "k": "Protocol",
+      "p": "파이썬에서 약속을 적는 방법. 상속을 안 해도 모양만 맞으면 됩니다"
+     }
+    ]
+   },
+   {
+    "p": "<strong>콘센트와 플러그로 생각하면 됩니다.</strong> 포트가 콘센트 모양이고 어댑터가 거기 꽂는 플러그입니다. 모양만 맞으면 무엇을 꽂든 상관없습니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/domain/ports.py",
+  "title": "약속이 두 개 있습니다",
+  "blocks": [
+   {
+    "groups": [
+     {
+      "h": "VectorStore — 읽기",
+      "fns": [
+       "get_vector",
+       "search",
+       "has",
+       "chunk_ids_for_products",
+       "fetch_payloads",
+       "hashes"
+      ],
+      "p": "벡터를 꺼내고 · 비슷한 것을 찾고 · 있는지 보고 · 지문을 읽습니다"
+     },
+     {
+      "h": "VectorStore — 쓰기",
+      "fns": [
+       "recreate",
+       "upsert",
+       "delete",
+       "set_payload"
+      ],
+      "p": "표를 새로 만들고 · 넣고 · 지우고 · 베껴 둔 값을 고칩니다"
+     },
+     {
+      "h": "ProductRepository",
+      "fns": [
+       "find_by_id",
+       "find_page",
+       "find_cards",
+       "next_id",
+       "insert",
+       "update",
+       "delete"
+      ],
+      "p": "상품 표에 닿는 자리. 열 개입니다"
+     }
+    ]
+   },
+   {
+    "fix": "읽기와 쓰기가 둘 다 포트에 있습니다",
+    "body": "읽기만 약속으로 두고 쓰기는 직접 하면, 저장소를 갈아끼울 때 쓰기 쪽이 통째로 남습니다. <strong>양쪽이 다 약속 뒤에 있어야 갈아끼울 수 있습니다.</strong>"
+   },
+   {
+    "p": "그리고 규칙이 하나 더 있습니다. <strong>이 약속에 SQL 조각을 넘기는 함수가 없습니다.</strong> \"이 조건으로 찾아 줘\" 가 아니라 \"이 상품의 카드를 줘\" 처럼 <strong>이름 붙은 질의</strong>만 있습니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "재미있는 지점",
+  "title": "포트가 왜 domain 에 있나",
+  "blocks": [
+   {
+    "p": "포트는 저장소에 대한 약속인데, 저장소 폴더가 아니라 <strong>제일 아래층에 있습니다.</strong> 일부러 그렇게 뒀습니다."
+   },
+   {
+    "vs": [
+     {
+      "k": "포트를 구현 옆에 두면",
+      "tone": "pain",
+      "code": "app/adapters/stores/ports.py\napp/adapters/stores/sqlite_store.py",
+      "p": "위층이 어댑터 폴더를 가리키게 됩니다. SQLite 를 아는 셈입니다"
+     },
+     {
+      "k": "포트를 domain 에 두면",
+      "tone": "build",
+      "code": "app/domain/ports.py\napp/adapters/stores/sqlite_store.py",
+      "p": "위층은 <code>domain</code> 만 봅니다. 어댑터가 있는지도 모릅니다"
+     }
+    ]
+   },
+   {
+    "p": "<strong>구현이 약속을 향해야 하지, 약속이 구현 옆에 있으면 안 됩니다.</strong> 그래서 <code>app/</code> 과 <code>pipeline/</code> 어디에도 <code>sqlite</code> 라는 글자가 없습니다. 저장소 구현 파일 하나만 빼고요."
+   },
+   {
+    "fix": "CI 가 이걸 검사합니다",
+    "body": "<code>grep</code> 으로 <code>app/features</code> 와 <code>app/api</code> 안에 <code>sqlite_store</code> 를 가리키는 줄이 있나 봅니다. 있으면 통과 못 합니다."
+   }
+  ]
+ },
+ {
+  "layout": "statement",
+  "text": "app/repositories/ — SQL 이 사는 유일한 곳입니다.",
+  "sub": "이 폴더 밖에 SELECT 가 한 글자라도 있으면 CI 가 막습니다."
+ },
+ {
+  "eyebrow": "app/repositories/",
+  "title": "표마다 파일 하나입니다",
+  "blocks": [
+   {
+    "tree": [
+     {
+      "root": "app/repositories/"
+     },
+     {
+      "t": "__init__.py",
+      "d": "어느 파일이 어느 표를 맡는지 알려 줍니다",
+      "hi": true
+     },
+     {
+      "t": "customers.py",
+      "d": "고객 표. 함수 5개"
+     },
+     {
+      "t": "products.py",
+      "d": "상품 표. 함수 10개"
+     },
+     {
+      "t": "purchases.py",
+      "d": "구매와 후기 표. 함수 6개"
+     },
+     {
+      "t": "details.py",
+      "d": "상세에서 나온 세 표. 함수 4개"
+     },
+     {
+      "t": "usage.py",
+      "d": "사용 기록 표. 함수 5개"
+     },
+     {
+      "t": "schema.py",
+      "d": "표 모양의 버전. 함수 3개"
+     }
+    ]
+   },
+   {
+    "p": "7개 파일 398줄입니다. 여기 있는 함수는 전부 <strong>SQL 문장 하나를 들고 있고, 그것 말고는 아무 일도 안 합니다.</strong>"
+   }
+  ]
+ },
+ {
+  "eyebrow": "규칙",
+  "title": "이름 붙은 질의만 냅니다",
+  "blocks": [
+   {
+    "vs": [
+     {
+      "k": "이렇게 만들면 안 됩니다",
+      "tone": "pain",
+      "code": "def find(table, where, params):\n    return dicts(f\"SELECT * FROM {table} \"\n                 f\"WHERE {where}\", params)",
+      "p": "편해 보이지만 SQL 조각이 밖으로 새어 나갑니다. 부르는 쪽이 SQL 을 쓰게 됩니다"
+     },
+     {
+      "k": "이렇게 만듭니다",
+      "tone": "build",
+      "code": "def find_profile(customer_id):\n    ...\n\ndef bought_product_ids(customer_id):\n    ...",
+      "p": "무엇을 찾는지가 이름에 있습니다. 부르는 쪽은 SQL 을 몰라도 됩니다"
+     }
+    ]
+   },
+   {
+    "p": "함수 이름만 읽어도 무슨 데이터가 오는지 알 수 있습니다. <code>bought_product_ids</code> · <code>history_category_product_ids</code> · <code>holdout_answers</code> 처럼요."
+   },
+   {
+    "fix": "이 규칙이 갈아끼우기의 전제입니다",
+    "body": "DB 를 Postgres 로 바꾸면 이 폴더의 SQL 문장만 고칩니다. <strong>함수 이름과 돌려주는 모양이 그대로면 나머지 폴더는 아무것도 안 바뀝니다.</strong>"
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/repositories/",
+  "title": "대표 함수들",
+  "blocks": [
+   {
+    "groups": [
+     {
+      "h": "고객",
+      "fns": [
+       "find_profile",
+       "list_with_counts",
+       "distinct_names",
+       "all_ids"
+      ],
+      "p": "<code>distinct_names</code> 는 마스킹 사전에 쓸 이름 목록입니다. 이 자리에서만 나옵니다"
+     },
+     {
+      "h": "구매·후기",
+      "fns": [
+       "find_by_customer",
+       "bought_product_ids",
+       "history_category_product_ids",
+       "holdout_answers"
+      ],
+      "p": "추천에서 후보를 좁히는 재료가 여기서 나옵니다"
+     },
+     {
+      "h": "상품",
+      "fns": [
+       "find_by_id",
+       "find_page",
+       "find_cards",
+       "next_id",
+       "insert",
+       "update",
+       "delete"
+      ],
+      "p": "화면의 상품 관리가 이걸 씁니다. 쓰기까지 다 있습니다"
+     },
+     {
+      "h": "표 버전",
+      "fns": [
+       "ensure_version_table",
+       "current_version",
+       "record_version"
+      ],
+      "p": "이 DB 가 어느 단계까지 왔는지 적어 둡니다"
+     }
+    ]
+   },
+   {
+    "fix": "find_cards 를 눈여겨보세요",
+    "body": "상품 아이디 <strong>여러 개를 한 번에</strong> 받습니다. 하나씩 스무 번 묻는 대신 한 번에 묻습니다. 지금은 차이가 안 보이지만, DB 가 네트워크 너머로 가면 그 스무 번이 그대로 왕복이 됩니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/repositories/__init__.py",
+  "title": "뜰 때 표 모양을 맞춥니다",
+  "lead": "코드는 새로 배포됐는데 DB 에 그 컬럼이 없으면 죽습니다. 그걸 맞추는 자리입니다.",
+  "blocks": [
+   {
+    "code": "steps = (\n    (1, \"usage_log 표\",         lambda: ...),\n    (2, \"products.source 컬럼\",  lambda: ...),\n)",
+    "cap": "<code>apply_migrations</code>. 번호가 붙은 단계 목록입니다"
+   },
+   {
+    "flow": [
+     {
+      "t": "지금 몇 번까지 왔나"
+     },
+     {
+      "t": "안 돈 것만 돈다",
+      "on": true
+     },
+     {
+      "t": "돌았다고 적는다"
+     }
+    ]
+   },
+   {
+    "p": "<code>schema_version</code> 표에 \"몇 번까지 마쳤다\" 가 적혀 있습니다. 서버가 뜰 때마다 이걸 보고 <strong>안 돈 것만 돌립니다.</strong> 이미 돈 것은 건너뜁니다. 그래서 몇 번을 다시 띄워도 안전합니다."
+   },
+   {
+    "acc": "되돌리는 길은 없습니다",
+    "body": "1번에서 2번으로 가는 길만 있고 2번에서 1번으로 돌아오는 길은 없습니다. 그리고 앱의 DB 계정이 <strong>표를 고칠 권한을 늘 들고 있어야</strong> 합니다. 둘 다 README 에 \"아직 안 한 것\" 으로 적혀 있습니다."
+   }
+  ]
+ },
+ {
+  "layout": "statement",
+  "text": "app/adapters/ — 바깥과 이야기하는 자리입니다.",
+  "sub": "LLM 과 벡터 저장소. 우리가 못 만든 것들이 여기 붙습니다."
+ },
+ {
+  "eyebrow": "app/adapters/llm.py",
+  "title": "20줄짜리 파일 하나가 전부입니다",
+  "blocks": [
+   {
+    "code": "chat = ChatOpenAI(\n  model=LLM_MODEL, base_url=LLM_BASE_URL, api_key=LLM_API_KEY,\n  temperature=0, timeout=TIMEOUT, callbacks=[writer, tracer])\n\nchat_answer = ChatOpenAI(..., temperature=0.3, stream_usage=True)",
+    "cap": "LLM 을 만드는 코드가 이 파일에만 있습니다"
+   },
+   {
+    "table": {
+     "head": [
+      "",
+      "<code>chat</code>",
+      "<code>chat_answer</code>"
+     ],
+     "rows": [
+      [
+       "쓰는 곳",
+       "추천 (번호를 고르게 함)",
+       "질의응답 (글을 쓰게 함)"
+      ],
+      [
+       "temperature",
+       "0 — 매번 같은 답",
+       "0.3 — 조금 다양하게"
+      ],
+      [
+       "스트리밍",
+       "안 씁니다",
+       "씁니다"
+      ]
+     ]
+    }
+   },
+   {
+    "fix": "OpenAI 라고 적혀 있지만 로컬도 이걸로 부릅니다",
+    "body": "<code>base_url</code> 만 바꾸면 됩니다. 로컬 Ollama 가 OpenAI 와 같은 규격을 흉내 내 줍니다. 그래서 <strong>모델을 바꾸는 데 코드가 안 바뀝니다.</strong> <code>.env</code> 한 줄입니다."
+   },
+   {
+    "p": "<code>callbacks=[writer, tracer]</code> 가 앞에서 본 기록 담당입니다. 여기서 한 번 붙여 두면 이 LLM 을 쓰는 모든 곳에서 자동으로 기록됩니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/adapters/stores/",
+  "title": "약속을 지키는 구현",
+  "blocks": [
+   {
+    "anat": {
+     "file": "app/adapters/stores/sqlite_store.py",
+     "meta": "187줄 · 클래스 1개",
+     "rows": [
+      {
+       "g": "set",
+       "n": "TABLES",
+       "d": "종류 네 개가 어느 표를 쓰는지"
+      },
+      {
+       "g": "fn",
+       "n": "_load_vectors(table, key)",
+       "d": "글자로 저장된 벡터를 숫자 행렬로 되살립니다"
+      },
+      {
+       "g": "fn",
+       "n": "vector_to_text(vector)",
+       "d": "숫자 행렬을 다시 글자로"
+      },
+      {
+       "g": "cls",
+       "n": "SqliteVectorStore",
+       "d": "포트의 약속 열 개를 실제로 지킵니다"
+      }
+     ]
+    }
+   },
+   {
+    "code": "# app.domain.ports.VectorStore 의 약속을 지킨다. Protocol 이라 상속은 안 한다\nclass SqliteVectorStore:",
+    "cap": "상속을 안 합니다. <strong>모양만 맞으면 됩니다</strong>"
+   },
+   {
+    "p": "약속을 지키는지 확인하는 시험이 따로 있습니다. <code>tests/contract/test_vector_store.py</code> 에 19개입니다. <strong>나중에 다른 저장소를 만들면 같은 시험을 그대로 돌려 보면 됩니다.</strong>"
+   }
+  ]
+ },
+ {
+  "eyebrow": "재미있는 지점",
+  "title": "벡터를 한 번만 읽고 들고 있습니다",
+  "blocks": [
+   {
+    "p": "검색할 때마다 DB 에서 벡터 1,560개를 읽으면 느립니다. 그래서 <strong>처음 한 번만 읽어서 메모리에 들고 있습니다.</strong>"
+   },
+   {
+    "flow": [
+     {
+      "t": "처음 검색"
+     },
+     {
+      "t": "DB 에서 전부 읽음 (25ms)",
+      "on": true
+     },
+     {
+      "t": "메모리에 보관"
+     },
+     {
+      "t": "그다음부터는 계산만 (9ms)"
+     }
+    ]
+   },
+   {
+    "code": "def _invalidate(self, kind):\n    self._cache.pop(kind, None)",
+    "cap": "벡터를 새로 넣으면 들고 있던 것을 버립니다. 안 버리면 옛날 것으로 검색합니다"
+   },
+   {
+    "acc": "이런 게 제일 잡기 어려운 버그입니다",
+    "body": "상품을 고쳤는데 검색 결과가 안 바뀝니다. 오류도 안 납니다. DB 를 열어 보면 새 벡터가 들어가 있습니다. <strong>메모리에 있는 옛날 것을 쓰고 있는 것</strong>인데 그게 안 보입니다."
+   },
+   {
+    "p": "그래서 넣고 지우는 함수마다 <code>_invalidate</code> 를 부릅니다. 계약 시험이 그것도 봅니다 — \"넣은 뒤에 검색하면 새 것이 나오나\"."
+   }
+  ]
+ },
+ {
+  "eyebrow": "정리",
+  "title": "네 폴더를 한 표로",
+  "blocks": [
+   {
+    "table": {
+     "head": [
+      "폴더",
+      "파일",
+      "무엇이 모인 곳",
+      "여기 없는 것"
+     ],
+     "rows": [
+      [
+       "<code>core/</code>",
+       "6",
+       "다 같이 쓰는 하나짜리들",
+       "기능. 여기는 도구만 있습니다"
+      ],
+      [
+       "<code>domain/</code>",
+       "5",
+       "순수한 계산과 약속",
+       "DB · 네트워크 · LLM"
+      ],
+      [
+       "<code>repositories/</code>",
+       "7",
+       "SQL 문장",
+       "판단. 꺼내 주기만 합니다"
+      ],
+      [
+       "<code>adapters/</code>",
+       "4",
+       "바깥과 이야기하기",
+       "우리 규칙. 남의 규격을 따릅니다"
+      ]
+     ]
+    }
+   },
+   {
+    "p": "네 폴더 다 <strong>\"기능\" 이 없습니다.</strong> 추천도 검색도 여기 없습니다. 그건 다음 편의 <code>features/</code> 가 이 넷을 불러다 조립해서 만듭니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "되짚기",
+  "title": "이 편에서 본 것",
+  "blocks": [
+   {
+    "goals": [
+     {
+      "n": "01",
+      "t": "<code>core</code> 는 하나만 있으면 되는 것들, <code>domain</code> 은 아무것도 모르는 계산입니다"
+     },
+     {
+      "n": "02",
+      "t": "포트는 약속이고 <code>domain/</code> 에 있습니다. 구현이 약속을 향합니다"
+     },
+     {
+      "n": "03",
+      "t": "SQL 은 <code>repositories/</code> 에만 있고 이름 붙은 질의만 냅니다"
+     },
+     {
+      "n": "04",
+      "t": "<code>.env</code> 한 줄로 로컬과 상용이 갈리고, DB 파일까지 따로 갈립니다"
+     }
+    ]
+   },
+   {
+    "p": "이 편의 파일들은 <strong>혼자서는 아무 일도 안 합니다.</strong> 다음 편에서 이것들이 하나로 이어집니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "예상 질문",
+  "title": "포트를 만들어 두면 정말 갈아끼워지나",
+  "blocks": [
+   {
+    "qa": "약속을 적어 뒀으니 구현만 바꾸면 된다는 게 맞나요.",
+    "a": "<strong>아직 모릅니다.</strong> 두 번째 구현을 만들어 본 적이 없습니다. SQL 을 한 층에 모았고, 약속을 <code>ports.py</code> 에 적었고, 계약 시험 19개가 그 약속을 봅니다. 거기까지가 사실이고 나머지는 주장입니다.",
+    "src": "<code>README.md</code> \"아직 안 한 것\" 첫 줄",
+    "tail": "그럼 언제 확인되나 — 두 번째 저장소를 만드는 날입니다",
+    "do": "<code>pytest tests/contract -v</code> 를 돌려 보세요. 약속 하나하나를 확인하는 시험 19개가 이름과 함께 나옵니다"
+   }
+  ]
+ },
+ {
+  "eyebrow": "예상 질문",
+  "title": "core 와 domain 이 뭐가 다른가",
+  "blocks": [
+   {
+    "qa": "둘 다 밑에 깔린 것들인데 왜 갈랐나요.",
+    "a": "<code>core</code> 는 <strong>바깥을 압니다.</strong> DB 에 연결하고 파일을 읽고 모델을 내려받습니다. <code>domain</code> 은 <strong>아무것도 모릅니다.</strong> 값을 받아 값을 돌려줍니다. 그래서 <code>domain</code> 은 시험하기 쉽고, <code>core</code> 는 시험하려면 준비가 필요합니다.",
+    "src": "<code>tests/test_layers.py</code> 의 <code>LAYER</code> 표 (<code>domain</code> 0층, <code>core</code> 1층)",
+    "tail": "그럼 새 코드를 어디 둘지는 \"바깥을 아는가\" 로 정하게 됩니다",
+    "do": "<code>app/domain/</code> 의 다섯 파일에서 <code>import</code> 줄만 보세요. <code>re</code> · <code>hashlib</code> 같은 파이썬 기본 것뿐입니다"
+   }
+  ]
+ },
+ {
+  "eyebrow": "예상 질문",
+  "title": "마스킹이 완벽하지 않은데 써도 되나",
+  "blocks": [
+   {
+    "qa": "이름이 최소 31건 안 잡힌다면서요. 그런 걸 그냥 쓰나요.",
+    "a": "완벽하지 않다는 것을 <strong>숫자로 적어 두고</strong> 씁니다. \"완벽합니다\" 라고 하면 아무도 다시 안 봅니다. \"31건이 남습니다\" 라고 적어 두면 그게 문제가 되는 날 무엇을 고쳐야 하는지 압니다.",
+    "src": "<code>docs/measurements.md</code> 의 마스킹 절",
+    "tail": "다음 수는 이름 인식 모델을 붙이는 것인데 아직 안 했습니다",
+    "do": "<code>pytest tests/test_masking.py -v</code> 를 돌려 보세요. 무엇이 가려지고 무엇이 안 가려지는지가 시험 이름에 그대로 있습니다"
+   }
+  ]
+ },
+ {
+  "layout": "cover",
+  "eyebrow": "3편 끝",
+  "num": "→ 04",
+  "title": "다음은 이것들이 이어지는 자리입니다",
+  "lead": "지금까지 본 부품들을 <code>features/</code> 가 불러다 조립하고, <code>api/</code> 가 주소를 붙여 밖에 내놓습니다. 요청 하나를 끝까지 따라갑니다."
+ }
+];
+
+const stage = document.getElementById('stage');
+const prog = document.getElementById('prog');
+const railno = document.getElementById('railno');
+const count = document.getElementById('count');
+const idx = document.getElementById('idx');
+
+function chips(names) {
+  return names.map(function (n) { return '<span class="fn">' + n + '</span>'; }).join('');
+}
+
+function block(b) {
+  if (b.p) return '<p>' + b.p + '</p>';
+  if (b.code) return '<pre class="' + (b.bad ? 'bad' : '') + '"><code>' + b.code + '</code></pre>'
+    + (b.cap ? '<p class="cap">' + b.cap + '</p>' : '');
+  if (b.acc) return '<div class="acc"><h3>' + b.acc + '</h3><p>' + b.body + '</p></div>';
+  if (b.fix) return '<div class="fix"><h3>' + b.fix + '</h3><p>' + b.body + '</p></div>';
+  if (b.strata) return '<div class="strata">' + b.strata.map(function (r) {
+    var hi = r.hi ? ' hi' : '';
+    return '<div class="band-n' + hi + '">' + r.n + '</div>'
+      + '<div class="band-d' + hi + '">' + r.d + '</div>';
+  }).join('') + '</div>';
+  if (b.flow) return '<div class="flow">' + b.flow.map(function (f, i) {
+    return (i ? '<span class="arrow">&rarr;</span>' : '')
+      + '<span class="step ' + (f.on ? 'on' : '') + '">' + f.t + '</span>';
+  }).join('') + '</div>';
+  if (b.cards) return '<div class="cards ' + (b.cards.length > 2 ? 'three' : 'two') + '">'
+    + b.cards.map(function (c) {
+      return '<div class="card">' + (c.k ? '<div class="k">' + c.k + '</div>' : '')
+        + (c.h ? '<h3>' + c.h + '</h3>' : '') + '<p>' + c.p + '</p></div>';
+    }).join('') + '</div>';
+  if (b.vs) return '<div class="vs">' + b.vs.map(function (v) {
+    return '<div><div class="eyebrow ' + (v.tone || '') + '">' + v.k + '</div>'
+      + (v.code ? '<pre class="' + (v.tone === 'pain' ? 'bad' : '') + '"><code>' + v.code + '</code></pre>' : '')
+      + '<p class="sub">' + v.p + '</p></div>';
+  }).join('') + '</div>';
+  if (b.table) return '<div class="scroll"><table><thead><tr>'
+    + b.table.head.map(function (x) { return '<th>' + x + '</th>'; }).join('')
+    + '</tr></thead><tbody>' + b.table.rows.map(function (r) {
+      return '<tr>' + r.map(function (c, i) {
+        var num = i > 0 && /^[0-9$.,%~+→-]+$/.test(String(c));
+        return '<td class="' + (num ? 'n' : '') + '">' + c + '</td>';
+      }).join('') + '</tr>';
+    }).join('') + '</tbody></table></div>';
+  if (b.qa) return '<div class="qa">'
+    + '<div class="q"><span class="mk">Q.</span><p>' + b.qa + '</p></div>'
+    + '<div class="a"><span class="mk">A.</span><p>' + b.a + '</p></div>'
+    + '<div class="meta"><div><b>근거</b>' + b.src + '</div>'
+    + (b.tail ? '<div class="tail"><b>꼬리</b>' + b.tail + '</div>' : '')
+    + '</div>'
+    + (b.do ? '<div class="do"><div class="k">이렇게 해 두세요</div><p>' + b.do + '</p></div>' : '')
+    + '</div>';
+  if (b.tree) return '<div class="tree">' + b.tree.map(function (r) {
+    if (r.root) return '<div class="root">' + r.t + '</div>';
+    var hi = r.hi ? ' hi' : '';
+    return '<div class="t' + hi + '">' + r.t + '</div>'
+      + '<div class="d' + hi + '">' + (r.d || '') + '</div>';
+  }).join('') + '</div>';
+  /* 파일 구조표. 배지 · 코드에 있는 이름 · 하는 일 */
+  if (b.anat) {
+    var LABEL = { doc: '설명글', imp: 'import', set: '설정값', fn: '함수', cls: '클래스', run: '실행문' };
+    return '<div class="anat"><div class="hd"><div class="f">' + b.anat.file + '</div>'
+      + '<div class="m">' + (b.anat.meta || '') + '</div></div>'
+      + '<div class="rows">' + b.anat.rows.map(function (r) {
+        return '<div class="c-g"><span class="g g-' + r.g + '">' + (LABEL[r.g] || r.g) + '</span></div>'
+          + '<div class="c-n">' + r.n + '</div>'
+          + '<div class="c-d">' + (r.d || '') + '</div>';
+      }).join('') + '</div></div>';
+  }
+  /* 들어오는 것 · 하는 일 · 나가는 것 */
+  if (b.io) return '<div class="io">'
+    + '<div class="box"><div class="k">들어오는 것</div><ul>'
+    + b.io.in.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></div>'
+    + '<div class="ar">&rarr;</div>'
+    + '<div class="box mid"><div class="k">하는 일</div><p>' + b.io.does + '</p></div>'
+    + '<div class="ar">&rarr;</div>'
+    + '<div class="box"><div class="k">나가는 것</div><ul>'
+    + b.io.out.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></div>'
+    + '</div>';
+  /* 실행 구간이 어떤 함수를 부르나 */
+  if (b.calls) return '<div class="calls">' + b.calls.map(function (c) {
+    return '<div class="s"><b>' + c.s + '</b>'
+      + (c.d ? '<span>' + c.d + '</span>' : '') + '</div>'
+      + '<div class="fns">'
+      + (c.fns.length ? chips(c.fns) : '<span class="none">부르는 함수 없음</span>')
+      + '</div>';
+  }).join('') + '</div>';
+  /* 함수를 역할별로 묶어 보여 준다 */
+  if (b.groups) return '<div class="groups">' + b.groups.map(function (g) {
+    return '<div class="gr"><h3>' + g.h + '</h3>'
+      + '<div class="fns">' + chips(g.fns) + '</div><p>' + g.p + '</p></div>';
+  }).join('') + '</div>';
+  if (b.goals) return '<div class="goals">' + b.goals.map(function (g) {
+    return '<div class="go"><div class="no">' + g.n + '</div><div class="tx">' + g.t + '</div></div>';
+  }).join('') + '</div>';
+  /* 함수가 무엇을 받아 무엇을 돌려주나 */
+  if (b.sig) {
+    var rows = [];
+    if (b.sig.in && b.sig.in.length) {
+      b.sig.in.forEach(function (x, i) {
+        rows.push([i ? '' : '받는 것', x[0], x[1]]);
+      });
+    } else {
+      rows.push(['받는 것', '없음', '인자를 받지 않습니다']);
+    }
+    b.sig.out.forEach(function (x, i) { rows.push([i ? '' : '돌려주는 것', x[0], x[1]]); });
+    return '<div class="sig">' + rows.map(function (r) {
+      return '<div class="k">' + r[0] + '</div><div class="v">' + r[1]
+        + '</div><div class="d">' + r[2] + '</div>';
+    }).join('') + '</div>';
+  }
+  if (b.terms) return '<div class="terms">' + b.terms.map(function (t) {
+    return '<div class="k">' + t.k + '</div><div class="p">' + t.p + '</div>';
+  }).join('') + '</div>';
+  if (b.fig) return '<div class="fig">' + b.fig + '</div>'
+    + (b.cap ? '<p class="cap">' + b.cap + '</p>' : '');
+  if (b.list) return '<ul>' + b.list.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>';
+  if (b.drill) return '<div class="drill"><div class="k">실습</div><h3>' + b.drill + '</h3>'
+    + (b.code ? '<pre><code>' + b.code + '</code></pre>' : '') + '<p>' + b.body + '</p></div>';
+  return '';
+}
+
+function render(s) {
+  const el = document.createElement('section');
+  el.className = 'slide';
+  el.setAttribute('aria-hidden', 'true');
+  let h = '';
+  if (s.eyebrow) h += '<div class="eyebrow ' + (s.tone || '') + '">' + s.eyebrow + '</div>';
+  if (s.layout === 'cover') {
+    h += '<div class="cover"><div class="num">' + s.num + '</div><h1>' + s.title + '</h1>'
+      + (s.lead ? '<p class="lead">' + s.lead + '</p>' : '') + '</div>';
+  } else if (s.layout === 'statement') {
+    h += '<p class="statement">' + s.text + '</p>'
+      + (s.sub ? '<p class="sub" style="margin-top:22px">' + s.sub + '</p>' : '');
+  } else {
+    if (s.title) h += '<h2' + (s.kind === 'fn' ? ' class="fn-title"' : '') + '>' + s.title + '</h2>';
+    if (s.lead) h += '<p class="lead">' + s.lead + '</p>';
+    (s.blocks || []).forEach(function (b) { h += block(b); });
+  }
+  el.innerHTML = h;
+  return el;
+}
+
+const nodes = S.map(render);
+nodes.forEach(function (n) { stage.appendChild(n); });
+
+let cur = 0;
+function show(i) {
+  cur = Math.max(0, Math.min(S.length - 1, i));
+  nodes.forEach(function (n, j) {
+    n.classList.toggle('on', j === cur);
+    n.setAttribute('aria-hidden', j === cur ? 'false' : 'true');
+  });
+  prog.style.width = ((cur + 1) / S.length * 100) + '%';
+  railno.textContent = cur + 1;
+  count.textContent = (cur + 1) + ' / ' + S.length;
+  try { localStorage.setItem('deck-e3', String(cur)); } catch (e) {}
+}
+
+document.getElementById('idxlist').innerHTML = S.map(function (s, i) {
+  return '<li tabindex="0" data-i="' + i + '" class="' + (s.layout === 'cover' ? 'ch' : '') + '">'
+    + '<span>' + (i + 1) + '</span>' + (s.title || s.text || '') + '</li>';
+}).join('');
+document.getElementById('idxlist').addEventListener('click', function (e) {
+  const li = e.target.closest('li'); if (!li) return;
+  show(+li.dataset.i); idx.classList.remove('on');
+});
+document.getElementById('idxlist').addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  const li = e.target.closest('li'); if (!li) return;
+  show(+li.dataset.i); idx.classList.remove('on');
+});
+document.getElementById('idxbtn').addEventListener('click', function () { idx.classList.toggle('on'); });
+
+document.addEventListener('keydown', function (e) {
+  if (e.target.tagName === 'BUTTON' && e.key === ' ') return;
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { show(cur + 1); e.preventDefault(); }
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp') { show(cur - 1); e.preventDefault(); }
+  if (e.key === 'Home') show(0);
+  if (e.key === 'End') show(S.length - 1);
+  if (e.key.toLowerCase() === 'm') idx.classList.toggle('on');
+  if (e.key === 'Escape') idx.classList.remove('on');
+});
+
+let start = 0;
+try { start = Math.min(parseInt(localStorage.getItem('deck-e3') || '0', 10) || 0, S.length - 1); } catch (e) {}
+show(start);
+</script>

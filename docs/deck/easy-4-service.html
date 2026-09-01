@@ -1,0 +1,1633 @@
+<title>요청 한 번이 지나가는 길</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --paper:#F1F3F4; --card:#FBFCFC; --ink:#17212B; --muted:#5A6672;
+  --rule:#D3D9DD; --rule-soft:#E4E9EB;
+  --oxide:#B4501E; --oxide-soft:#F5E6DC;
+  --teal:#16697A; --teal-soft:#DDEBED;
+  --shadow:0 1px 2px rgba(23,33,43,.06), 0 8px 24px rgba(23,33,43,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:#131A20; --card:#1B242C; --ink:#E4E9EC; --muted:#93A1AC;
+    --rule:#2C3842; --rule-soft:#232E37;
+    --oxide:#E08A55; --oxide-soft:#3A2418;
+    --teal:#63B0C0; --teal-soft:#16303A;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
+  }
+}
+:root[data-theme="dark"] {
+  --paper:#131A20; --card:#1B242C; --ink:#E4E9EC; --muted:#93A1AC;
+  --rule:#2C3842; --rule-soft:#232E37;
+  --oxide:#E08A55; --oxide-soft:#3A2418;
+  --teal:#63B0C0; --teal-soft:#16303A;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
+}
+
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans KR", system-ui, -apple-system, sans-serif;
+  line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.deck { position:relative; min-height:100vh; }
+
+.rail {
+  position:fixed; left:0; top:0; bottom:0; width:56px; z-index:5;
+  border-right:1px solid var(--rule-soft); background:var(--paper);
+  display:flex; flex-direction:column; align-items:center; justify-content:space-between;
+  padding:20px 0;
+}
+.rail-ch { writing-mode:vertical-rl; font-size:12.5px; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--muted); font-weight:500; }
+.rail-no { font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--muted);
+  font-variant-numeric:tabular-nums; }
+
+/* 표와 구조표가 넓게 눕도록 슬라이드 폭을 크게 잡는다.
+   줄글은 아래에서 max-width 로 따로 묶으니 같이 늘어나지 않는다 */
+.stage { min-height:100vh; padding:48px 44px 84px 84px;
+  display:flex; flex-direction:column; justify-content:flex-start; }
+.slide { display:none; max-width:88rem; width:100%; }
+/* margin:auto 가 자리가 남으면 가운데로, 넘치면 위부터 놓는다 */
+.slide.on { margin:auto; }
+.slide.on { display:block; animation:rise .3s ease-out; }
+@keyframes rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+@media (prefers-reduced-motion: reduce) { .slide.on { animation:none; } }
+
+.eyebrow { font-size:14px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; margin-bottom:16px; }
+.eyebrow.pain { color:var(--oxide); }
+.eyebrow.build { color:var(--teal); }
+
+h1 { font-family:"Gowun Batang",serif; font-weight:700; font-size:clamp(2.5rem,5.6vw,4rem);
+  line-height:1.28; margin:0 0 20px; text-wrap:balance; letter-spacing:-.01em; }
+h2 { font-family:"Gowun Batang",serif; font-weight:700; font-size:clamp(1.75rem,3.4vw,2.45rem);
+  line-height:1.35; margin:0 0 16px; text-wrap:balance; max-width:32ch; }
+h3 { font-size:1.18rem; font-weight:600; margin:0 0 8px; }
+p { margin:0 0 16px; max-width:60ch; font-size:1.2rem; }
+p.lead { font-size:1.34rem; color:var(--muted); max-width:56ch; }
+p.sub { font-size:1.04rem; color:var(--muted); }
+strong { font-weight:600; }
+em { font-style:normal; color:var(--oxide); font-weight:500; }
+b.t { color:var(--teal); font-weight:600; }
+
+.cover { border-top:3px solid var(--ink); padding-top:26px; }
+.cover .num { font-family:"IBM Plex Mono",monospace; font-size:4rem; line-height:1;
+  color:var(--rule); font-weight:500; margin-bottom:14px; }
+
+.statement { font-family:"Gowun Batang",serif; font-size:clamp(2.05rem,4.6vw,3.15rem);
+  line-height:1.45; text-wrap:balance; max-width:24ch; margin:0; }
+
+.cards { display:grid; gap:14px; margin:0 0 16px; max-width:76rem; }
+.cards.two { grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
+.cards.three { grid-template-columns:repeat(auto-fit,minmax(185px,1fr)); }
+.card { background:var(--card); border:1px solid var(--rule-soft); border-radius:3px;
+  padding:16px 18px; box-shadow:var(--shadow); }
+.card p { margin:0; font-size:1.06rem; color:var(--muted); }
+.card .k { font-family:"IBM Plex Mono",monospace; font-size:.92rem; color:var(--muted);
+  letter-spacing:.06em; margin-bottom:6px; }
+
+.acc { border-left:3px solid var(--oxide); background:var(--oxide-soft);
+  padding:16px 20px; border-radius:0 3px 3px 0; margin:0 0 14px; max-width:72rem; }
+.acc h3 { color:var(--oxide); }
+.acc p { margin:0; max-width:64ch; }
+.fix { border-left:3px solid var(--teal); background:var(--teal-soft);
+  padding:16px 20px; border-radius:0 3px 3px 0; margin:0 0 14px; max-width:72rem; }
+.fix h3 { color:var(--teal); }
+.fix p { margin:0; max-width:64ch; }
+
+.strata { border:1px solid var(--rule); border-radius:3px; overflow:hidden;
+  margin:0 0 16px; max-width:68rem; background:var(--card);
+  display:grid; grid-template-columns:max-content minmax(0,1fr); }
+.strata > div { border-bottom:1px solid var(--rule-soft); padding:13px 18px; }
+.strata > div:nth-last-child(-n+2) { border-bottom:0; }
+.band-n { font-family:"IBM Plex Mono",monospace; font-size:1.02rem; font-weight:500;
+  white-space:nowrap; }
+.band-d { font-size:1.04rem; color:var(--muted); border-left:1px solid var(--rule-soft); }
+.strata .hi { background:var(--teal-soft); }
+.strata .band-n.hi { color:var(--teal); }
+
+.flow { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:0 0 18px; }
+.step { background:var(--card); border:1px solid var(--rule); border-radius:3px;
+  padding:11px 16px; font-family:"IBM Plex Mono",monospace; font-size:1rem; }
+.step.on { border-color:var(--teal); color:var(--teal); background:var(--teal-soft); }
+.arrow { color:var(--muted); }
+
+pre { background:var(--card); border:1px solid var(--rule-soft);
+  border-left:3px solid var(--teal); border-radius:0 3px 3px 0;
+  padding:14px 18px; overflow-x:auto; margin:0 0 12px; max-width:76rem; }
+code { font-family:"IBM Plex Mono",monospace; font-size:1rem; line-height:1.8; }
+pre.bad { border-left-color:var(--oxide); }
+.cap { font-size:1.02rem; color:var(--muted); margin:0 0 18px; }
+
+.qa { border:1px solid var(--rule); border-left:3px solid var(--ink);
+  border-radius:0 3px 3px 0; padding:18px 22px; margin:0 0 16px; background:var(--card);
+  max-width:76rem; }
+.qa .q { display:flex; gap:12px; margin-bottom:12px; }
+.qa .a { display:flex; gap:12px; margin-bottom:14px; }
+.qa .mk { font-family:"IBM Plex Mono",monospace; font-weight:600; color:var(--muted);
+  flex:0 0 1.4em; font-size:1.1rem; }
+.qa .q p, .qa .a p { margin:0; font-size:1.12rem; max-width:70ch; }
+.qa .q p { font-weight:600; }
+.qa .meta { border-top:1px solid var(--rule-soft); padding-top:12px;
+  display:flex; flex-direction:column; gap:6px; }
+.qa .meta div { font-size:1rem; color:var(--muted); }
+.qa .meta b { font-family:"IBM Plex Mono",monospace; font-size:.85rem; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted); margin-right:10px; font-weight:600; }
+.qa .meta .tail { color:var(--teal); }
+.qa .do { margin-top:14px; border-top:1px dashed var(--teal); padding-top:14px; }
+.qa .do .k { font-family:"IBM Plex Mono",monospace; font-size:.85rem; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--teal); font-weight:600; margin-bottom:8px; }
+.qa .do p { margin:0; font-size:1.04rem; color:var(--ink); max-width:70ch; }
+
+/* 폴더 트리.
+   세로선을 │ 글자로 그리면 줄 사이가 뚫린다. 글자는 줄 높이를 안 채우기 때문이다.
+   그래서 선은 CSS 의 border-left 로 그린다. 그러면 끊기지 않는다. */
+.tree { border:1px solid var(--rule); border-radius:3px; margin:0 0 20px;
+  background:var(--card); padding:14px 0; max-width:68rem;
+  display:grid; grid-template-columns:max-content minmax(0,1fr); }
+.tree .t { font-family:"IBM Plex Mono",monospace; font-size:1.04rem; font-weight:500;
+  color:var(--teal); white-space:nowrap; padding:6px 28px 6px 24px; }
+.tree .d { font-size:1.02rem; color:var(--muted); padding:6px 24px 6px 0; }
+.tree .root { grid-column:1 / -1; font-family:"IBM Plex Mono",monospace; font-size:1.06rem;
+  font-weight:600; color:var(--ink); padding:7px 24px; }
+.tree .hi { background:var(--teal-soft); }
+.tree .t.hi { font-weight:700; }
+
+/* 파일 구조표.
+   왼쪽 배지가 '무엇인가'(설명글 · import · 설정값 · 함수 · 실행문),
+   가운데가 코드에 그대로 있는 이름, 오른쪽이 그게 하는 일이다.
+
+   칸 사이에 세로선을 긋는다. 격자에 gap 을 주면 선이 못 붙으니 gap 을 0 으로 두고
+   칸마다 padding 을 준 뒤 border-left 로 긋는다. 격자 칸은 세로로 늘어나므로
+   선이 줄 높이를 다 채운다.
+
+   가운데 칸은 절대 줄바꿈하지 않는다. 함수 이름이 중간에서 끊기면 못 읽는다.
+   그래서 max-content 로 잡고 nowrap 을 건다. 창이 좁으면 표가 가로로 밀린다.
+
+   배지 색은 두 가지만 쓴다. 청록은 정의(불러야 도는 것),
+   먹색은 실행문(파일을 열면 바로 도는 것). 나머지는 회색이다. */
+.anat { border:1px solid var(--rule); border-radius:3px; background:var(--card);
+  margin:0 0 14px; overflow-x:auto; }
+.anat .hd { display:flex; flex-wrap:wrap; gap:6px 18px; justify-content:space-between;
+  align-items:baseline; padding:11px 18px; background:var(--paper);
+  border-bottom:1px solid var(--rule); }
+.anat .hd .f { font-family:"IBM Plex Mono",monospace; font-size:1.06rem; font-weight:600;
+  color:var(--ink); white-space:nowrap; }
+.anat .hd .m { font-size:.98rem; color:var(--muted); }
+/* 표 전체가 격자 하나다. 줄마다 격자를 따로 만들면 칸 너비가 줄마다 따로 정해져
+   세로선이 지그재그가 된다. 그래서 셀을 전부 한 격자에 넣는다 */
+.anat .rows { display:grid; grid-template-columns:max-content max-content minmax(18rem,1fr); }
+.anat .rows > div { border-bottom:1px solid var(--rule-soft); }
+.anat .rows > div:nth-last-child(-n+3) { border-bottom:0; }
+.anat .c-g { padding:10px 16px 10px 18px; }
+.anat .c-g .g { display:block; font-size:.76rem; letter-spacing:.04em; font-weight:600;
+  border-radius:2px; padding:2px 8px; text-align:center; white-space:nowrap; }
+.g-doc, .g-imp, .g-set { color:var(--muted); background:var(--rule-soft); }
+.g-fn, .g-cls { color:var(--teal); background:var(--teal-soft); }
+.g-run { color:var(--paper); background:var(--ink); }
+.anat .c-n { font-family:"IBM Plex Mono",monospace; font-size:1rem; color:var(--ink);
+  white-space:nowrap; padding:10px 20px; border-left:1px solid var(--rule-soft); }
+.anat .c-d { font-size:1rem; color:var(--muted);
+  padding:10px 20px; border-left:1px solid var(--rule-soft); }
+
+/* 들어오는 것 · 하는 일 · 나가는 것.
+   파일마다 같은 자리에 같은 모양으로 나오게 해서 서로 견줄 수 있게 한다 */
+.io { display:grid; grid-template-columns:1fr 2rem 1.15fr 2rem 1fr;
+  align-items:stretch; margin:0 0 18px; max-width:80rem; }
+.io .box { border:1px solid var(--rule); border-radius:3px; background:var(--card);
+  padding:14px 18px; }
+.io .box.mid { border-color:var(--teal); background:var(--teal-soft); }
+.io .k { font-size:.78rem; letter-spacing:.1em; color:var(--muted); font-weight:600;
+  margin-bottom:8px; }
+.io .box.mid .k { color:var(--teal); }
+.io ul { margin:0; padding-left:1.05rem; }
+.io li { font-size:1.02rem; margin-bottom:3px; max-width:none; }
+.io p { margin:0; font-size:1.06rem; max-width:none; }
+.io .ar { display:flex; align-items:center; justify-content:center;
+  color:var(--muted); font-size:1.3rem; }
+
+/* 실행 구간이 어떤 함수를 부르는가 */
+.calls { border:1px solid var(--rule); border-radius:3px; background:var(--card);
+  margin:0 0 16px; max-width:84rem; }
+.calls { display:grid; grid-template-columns:max-content minmax(0,1fr); }
+.calls > div { border-bottom:1px solid var(--rule-soft); }
+.calls > div:nth-last-child(-n+2) { border-bottom:0; }
+.calls .s { padding:12px 18px; }
+.calls .s b { display:block; font-size:1.04rem; font-weight:600; }
+.calls .s span { display:block; font-size:.96rem; color:var(--muted); }
+.calls .fns { padding:14px 18px; border-left:1px solid var(--rule-soft);
+  display:flex; flex-wrap:wrap; gap:7px; align-content:flex-start; }
+.calls .none { font-size:1rem; color:var(--muted); }
+.fn { font-family:"IBM Plex Mono",monospace; font-size:.95rem; color:var(--teal);
+  background:var(--teal-soft); border:1px solid var(--teal); border-radius:2px;
+  padding:1px 9px; white-space:nowrap; height:max-content; }
+
+/* 함수를 역할별로 묶어 보여 준다 */
+.groups { display:grid; grid-template-columns:repeat(auto-fit,minmax(255px,1fr));
+  gap:14px; margin:0 0 16px; max-width:84rem; }
+.groups .gr { border:1px solid var(--rule-soft); border-radius:3px; background:var(--card);
+  padding:15px 17px; box-shadow:var(--shadow); }
+.groups h3 { font-size:1.06rem; margin-bottom:10px; }
+.groups .fns { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.groups p { margin:0; font-size:1.02rem; color:var(--muted); max-width:none; }
+
+/* 낱말 풀이. 표처럼 줄만 긋는다 */
+.terms { border-top:1px solid var(--rule); margin:0 0 18px; max-width:72rem;
+  display:grid; grid-template-columns:max-content minmax(0,1fr); }
+.terms > div { border-bottom:1px solid var(--rule-soft); padding:11px 0; }
+.terms .k { font-family:"IBM Plex Mono",monospace; font-size:1.02rem; font-weight:500;
+  color:var(--teal); white-space:nowrap; padding-right:28px; }
+.terms .p { font-size:1.04rem; color:var(--muted); max-width:64ch; }
+
+/* 함수 슬라이드. 제목이 곧 함수 이름이다 */
+h2.fn-title { font-family:"IBM Plex Mono",monospace; font-weight:600;
+  font-size:clamp(1.5rem,2.8vw,2.05rem); letter-spacing:-.01em; max-width:none; }
+.sig { border:1px solid var(--rule); border-radius:3px; background:var(--card);
+  margin:0 0 18px; max-width:80rem;
+  display:grid; grid-template-columns:max-content max-content minmax(0,1fr); }
+.sig > div { border-bottom:1px solid var(--rule-soft); padding:11px 20px; }
+.sig > div:nth-last-child(-n+3) { border-bottom:0; }
+.sig .k { font-size:.82rem; letter-spacing:.08em; color:var(--muted); font-weight:600;
+  white-space:nowrap; }
+.sig .v { font-family:"IBM Plex Mono",monospace; font-size:1rem; color:var(--ink);
+  white-space:nowrap; border-left:1px solid var(--rule-soft); }
+.sig .d { font-size:1.02rem; color:var(--muted); border-left:1px solid var(--rule-soft); }
+
+/* 배우고 나면 할 수 있는 것 */
+.goals { margin:0 0 18px; max-width:72rem; border-top:1px solid var(--rule); }
+.goals .go { display:grid; grid-template-columns:2.4rem minmax(0,1fr); gap:16px;
+  padding:13px 0; border-bottom:1px solid var(--rule-soft); align-items:baseline; }
+.goals .no { font-family:"IBM Plex Mono",monospace; color:var(--teal); font-weight:600;
+  font-size:1.04rem; }
+.goals .tx { font-size:1.14rem; }
+
+.fig { margin:0 0 20px; max-width:84rem; }
+.fig svg { width:100%; height:auto; display:block; }
+.fig svg text { font-family:"IBM Plex Sans KR",sans-serif; }
+.fig svg .m { font-family:"IBM Plex Mono",monospace; }
+
+.vs { display:grid; grid-template-columns:repeat(auto-fit,minmax(255px,1fr)); gap:20px;
+  margin:0 0 16px; max-width:76rem; }
+
+table { border-collapse:collapse; width:100%; font-size:1.04rem; }
+th, td { text-align:left; padding:9px 14px; border-bottom:1px solid var(--rule-soft);
+  vertical-align:top; }
+th { font-size:.86rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+th + th, td + td { border-left:1px solid var(--rule-soft); }
+td.n { font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; text-align:right; }
+.scroll { overflow-x:auto; margin:0 0 16px; max-width:84rem; }
+
+.drill { border:1px dashed var(--teal); border-radius:3px; padding:18px 20px;
+  background:var(--teal-soft); margin:0 0 14px; max-width:72rem; }
+.drill .k { font-size:13px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--teal); font-weight:600; margin-bottom:8px; }
+.drill p { margin:0; max-width:64ch; }
+.drill pre { background:var(--card); }
+
+ul { margin:0 0 14px; padding-left:1.1rem; }
+li { margin-bottom:8px; font-size:1.14rem; max-width:60ch; }
+li::marker { color:var(--muted); }
+
+.bar { position:fixed; left:56px; right:0; bottom:0; height:44px; background:var(--paper);
+  border-top:1px solid var(--rule-soft); display:flex; align-items:center;
+  justify-content:space-between; padding:0 20px; font-size:13px; color:var(--muted); z-index:5; }
+.bar button { font:inherit; color:var(--muted); background:none; border:1px solid var(--rule);
+  border-radius:3px; padding:3px 10px; cursor:pointer; }
+.bar button:hover { color:var(--ink); border-color:var(--muted); }
+.bar button:focus-visible, .idx li:focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
+.prog { position:fixed; left:56px; right:0; bottom:44px; height:2px; background:var(--rule-soft); z-index:5; }
+.prog i { display:block; height:100%; background:var(--teal); transition:width .25s ease; }
+
+.idx { position:fixed; inset:0; background:var(--paper); z-index:20; padding:40px 40px 40px 84px;
+  overflow-y:auto; display:none; }
+.idx.on { display:block; }
+.idx ol { list-style:none; padding:0; margin:0; max-width:76rem; columns:2; column-gap:36px; }
+.idx li { break-inside:avoid; padding:7px 0; border-bottom:1px solid var(--rule-soft);
+  cursor:pointer; font-size:1.02rem; display:flex; gap:12px; }
+.idx li:hover { color:var(--teal); }
+.idx li span { font-family:"IBM Plex Mono",monospace; color:var(--muted); font-size:.95rem; min-width:2.4em; }
+.idx li.ch { font-weight:600; border-bottom-color:var(--rule); }
+
+@media (max-width:1100px) {
+  .anat .rows { grid-template-columns:max-content max-content minmax(13rem,1fr); }
+}
+@media (max-width:820px) {
+  .io { grid-template-columns:1fr; gap:10px; }
+  .io .ar { transform:rotate(90deg); }
+  .calls { grid-template-columns:minmax(0,1fr); }
+  .calls .fns { border-left:0; }
+}
+@media (max-width:760px) {
+  .rail { display:none; }
+  .stage { padding:32px 20px 80px; }
+  .bar, .prog { left:0; }
+  .idx { padding:32px 20px; }
+  .anat { font-size:.94rem; }
+  .terms, .sig { grid-template-columns:minmax(0,1fr); }
+  .terms > div, .sig > div { border-left:0; }
+  .idx ol { columns:1; }
+}
+</style>
+
+<div class="deck">
+  <div class="rail">
+    <div class="rail-ch">e4 features · api</div>
+    <div class="rail-no" id="railno">1</div>
+  </div>
+  <div class="stage" id="stage"></div>
+  <div class="prog"><i id="prog"></i></div>
+  <div class="bar">
+    <span>쉬운 편 · 4편 features · api · web</span>
+    <span><button id="idxbtn">목차 M</button> &nbsp; <span id="count"></span></span>
+  </div>
+  <div class="idx" id="idx"><h2>목차</h2><ol id="idxlist"></ol></div>
+</div>
+
+<script>
+const S = [
+ {
+  "layout": "cover",
+  "eyebrow": "쉬운 편 · 4편",
+  "num": "04",
+  "title": "요청 한 번이 지나가는 길",
+  "lead": "3편에서 본 부품들이 여기서 이어집니다. 조립하는 자리와 주소를 붙이는 자리, 그리고 그걸 부르는 화면입니다."
+ },
+ {
+  "eyebrow": "이 편의 목표",
+  "title": "다 보고 나면 이렇게 됩니다",
+  "blocks": [
+   {
+    "goals": [
+     {
+      "n": "01",
+      "t": "추천이 만들어지는 네 단계를 순서대로 말합니다"
+     },
+     {
+      "n": "02",
+      "t": "LLM 이 헛소리를 못 하게 막는 방법 두 가지를 압니다"
+     },
+     {
+      "n": "03",
+      "t": "엔드포인트 하나를 보고 무엇을 부르는지 따라갑니다"
+     },
+     {
+      "n": "04",
+      "t": "상품을 고치면 왜 벡터도 같이 바뀌어야 하는지 압니다"
+     }
+    ]
+   },
+   {
+    "p": "<strong>이 편이 이 프로젝트의 알맹이입니다.</strong> 앞의 세 편은 여기를 읽기 위한 준비였습니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "이 편의 지도",
+  "title": "세 자리를 봅니다",
+  "blocks": [
+   {
+    "strata": [
+     {
+      "n": "web/index.html",
+      "d": "화면 한 장. 841줄. 버튼을 누르면 아래 주소를 부릅니다"
+     },
+     {
+      "n": "app/api/",
+      "d": "주소를 받는 창구. 7개 파일 · 엔드포인트 16개",
+      "hi": true
+     },
+     {
+      "n": "app/features/",
+      "d": "조립하는 자리. 12개 파일 · 여기서 기능이 완성됩니다",
+      "hi": true
+     },
+     {
+      "n": "app/repositories/ · adapters/ · core/ · domain/",
+      "d": "3편에서 본 부품들"
+     }
+    ]
+   },
+   {
+    "p": "설명하는 순서는 <strong>아래에서 위로</strong>입니다. <code>features/</code> 를 먼저 보고 <code>api/</code> 를 보고 화면을 봅니다. 그래야 위에서 부르는 이름이 낯설지 않습니다."
+   }
+  ]
+ },
+ {
+  "layout": "statement",
+  "text": "app/features/ — 조립하는 자리입니다.",
+  "sub": "새로 만드는 것이 거의 없습니다. 아래 것들을 순서대로 부르는 게 일입니다."
+ },
+ {
+  "eyebrow": "app/features/",
+  "title": "열두 파일이 있습니다",
+  "blocks": [
+   {
+    "tree": [
+     {
+      "root": "app/features/"
+     },
+     {
+      "t": "searching.py",
+      "d": "추천 후보 만들기 · 벡터 검색 두 가지",
+      "hi": true
+     },
+     {
+      "t": "recommending.py",
+      "d": "LLM 에게 후보 중에서 고르게 하기",
+      "hi": true
+     },
+     {
+      "t": "answering.py",
+      "d": "질문에 답하기"
+     },
+     {
+      "t": "profile.py",
+      "d": "고객 한 명의 판 만들기"
+     },
+     {
+      "t": "products.py",
+      "d": "상품 등록 · 수정 · 삭제"
+     },
+     {
+      "t": "embedding_sync.py",
+      "d": "글이 바뀐 것만 벡터를 다시 만들기"
+     },
+     {
+      "t": "privacy.py",
+      "d": "마스킹에 고객 명단을 붙입니다"
+     },
+     {
+      "t": "safety_filter.py",
+      "d": "안전 필터에 DB 를 붙입니다"
+     },
+     {
+      "t": "readiness.py",
+      "d": "받을 준비가 됐나"
+     },
+     {
+      "t": "retrieve.py",
+      "d": "위 함수들을 한 이름으로 모아 줍니다"
+     },
+     {
+      "t": "schemas.py",
+      "d": "API 가 주고받는 데이터 모양"
+     },
+     {
+      "t": "product_schemas.py",
+      "d": "상품 쪽 데이터 모양"
+     }
+    ]
+   },
+   {
+    "p": "이 폴더에는 <strong>SQL 이 한 글자도 없습니다.</strong> 필요하면 <code>repositories/</code> 의 이름 붙은 함수를 부릅니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "조립이란",
+  "title": "profile.py 로 보는 조립",
+  "lead": "제일 짧은 예입니다. 37줄에 함수 두 개입니다.",
+  "blocks": [
+   {
+    "code": "def dashboard(customer_id):\n    profile   = customer_repo.find_profile(customer_id)\n    purchases = purchase_repo.find_by_customer(customer_id)\n    for row in purchases:\n        row[\"review_masked\"] = mask_text(row[\"review\"] or \"\")",
+    "cap": "저장소 두 개에서 꺼내고, 마스킹을 씌우고, 합쳐서 돌려줍니다"
+   },
+   {
+    "io": {
+     "in": [
+      "고객 아이디 하나"
+     ],
+     "does": "프로필과 구매 이력을 꺼내 후기를 가리고, 평균 별점과 총액을 계산해 한 판으로 만듭니다",
+     "out": [
+      "고객 · 평균 별점 · 총 구매액 · 카테고리별 건수 · 구매 이력",
+      "없으면 <code>None</code>"
+     ]
+    }
+   },
+   {
+    "p": "<strong>새로 만든 것은 계산 몇 줄뿐입니다.</strong> 꺼내는 것은 저장소가 하고, 가리는 것은 <code>domain</code> 이 합니다. 이 파일은 순서를 정하고 결과를 합칩니다. 그게 조립입니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "재미있는 지점",
+  "title": "전화번호와 메일은 아예 안 꺼냅니다",
+  "blocks": [
+   {
+    "code": "SELECT customer_id, name, age, gender, skin_type, city\nFROM customers WHERE customer_id = ?",
+    "cap": "<code>find_profile</code> 의 SQL. <code>phone</code> 과 <code>email</code> 이 목록에 없습니다"
+   },
+   {
+    "fix": "가리는 것보다 안 꺼내는 것이 낫습니다",
+    "body": "꺼내 놓고 가리면 <strong>가리는 것을 깜빡할 자리가 생깁니다.</strong> 애초에 안 꺼내면 깜빡할 수가 없습니다. 그래서 개인정보는 SQL 단계에서 뺍니다."
+   },
+   {
+    "p": "후기는 다릅니다. 후기는 <strong>보여 줘야 하는 값</strong>이라 안 꺼낼 수가 없습니다. 그래서 후기만 나갈 때 가립니다. 두 가지 방식이 각자 맞는 자리에 쓰이고 있습니다."
+   }
+  ]
+ },
+ {
+  "layout": "statement",
+  "text": "이제 추천입니다.",
+  "sub": "searching.py 의 candidates() 가 이 프로젝트에서 제일 중요한 함수입니다."
+ },
+ {
+  "eyebrow": "app/features/searching.py",
+  "title": "후보를 좁히는 네 단계",
+  "blocks": [
+   {
+    "fig": "<svg viewBox=\"0 0 940 380\" role=\"img\" aria-label=\"상품 200개에서 후보 20개까지 좁히는 네 단계\">\n  <defs>\n    <marker id=\"e4a\" markerWidth=\"9\" markerHeight=\"9\" refX=\"8\" refY=\"4.5\" orient=\"auto\">\n      <path d=\"M0 0 L9 4.5 L0 9 z\" fill=\"var(--muted)\"/></marker>\n  </defs>\n  <rect x=\"0\" y=\"12\" width=\"700\" height=\"44\" rx=\"4\" fill=\"var(--card)\" stroke=\"var(--rule)\" stroke-width=\"1.5\"/>\n  <text x=\"20\" y=\"40\" font-size=\"14\" fill=\"var(--ink)\">상품 전체 200개</text>\n  <text x=\"720\" y=\"40\" font-size=\"13.5\" fill=\"var(--muted)\">여기서 시작합니다</text>\n  <path d=\"M100 60 V 84\" stroke=\"var(--muted)\" stroke-width=\"2\" marker-end=\"url(#e4a)\"/>\n  <rect x=\"0\" y=\"90\" width=\"560\" height=\"44\" rx=\"4\" fill=\"var(--teal-soft)\" stroke=\"var(--teal)\" stroke-width=\"1.5\"/>\n  <text x=\"20\" y=\"118\" font-size=\"14\" fill=\"var(--teal)\">1. 이 사람이 사 본 카테고리만 남깁니다</text>\n  <text x=\"580\" y=\"118\" font-size=\"13.5\" fill=\"var(--muted)\">SQL · 이력 카테고리 필터</text>\n  <path d=\"M100 138 V 162\" stroke=\"var(--muted)\" stroke-width=\"2\" marker-end=\"url(#e4a)\"/>\n  <rect x=\"0\" y=\"168\" width=\"460\" height=\"44\" rx=\"4\" fill=\"var(--teal-soft)\" stroke=\"var(--teal)\" stroke-width=\"1.5\"/>\n  <text x=\"20\" y=\"196\" font-size=\"14\" fill=\"var(--teal)\">2. 이미 산 것을 뺍니다</text>\n  <text x=\"480\" y=\"196\" font-size=\"13.5\" fill=\"var(--muted)\">SQL · 산 걸 또 권하면 안 됩니다</text>\n  <path d=\"M100 216 V 240\" stroke=\"var(--muted)\" stroke-width=\"2\" marker-end=\"url(#e4a)\"/>\n  <rect x=\"0\" y=\"246\" width=\"400\" height=\"44\" rx=\"4\" fill=\"var(--oxide-soft)\" stroke=\"var(--oxide)\" stroke-width=\"1.5\"/>\n  <text x=\"20\" y=\"274\" font-size=\"14\" fill=\"var(--oxide)\">3. 안전 필터에 걸린 것을 뺍니다</text>\n  <text x=\"420\" y=\"274\" font-size=\"13.5\" fill=\"var(--muted)\">뺀 것도 이유와 함께 화면에 보여 줍니다</text>\n  <path d=\"M100 294 V 318\" stroke=\"var(--muted)\" stroke-width=\"2\" marker-end=\"url(#e4a)\"/>\n  <rect x=\"0\" y=\"324\" width=\"300\" height=\"44\" rx=\"4\" fill=\"var(--teal-soft)\" stroke=\"var(--teal)\" stroke-width=\"2\"/>\n  <text x=\"20\" y=\"352\" font-size=\"14\" fill=\"var(--teal)\">4. 벡터로 순위를 매겨 20개</text>\n  <text x=\"320\" y=\"352\" font-size=\"13.5\" fill=\"var(--muted)\">NumPy · 고객 벡터와 가까운 순서</text>\n</svg>"
+   },
+   {
+    "p": "<strong>앞의 셋은 SQL 이고 마지막 하나만 벡터입니다.</strong> AI 로 다 하는 게 아니라, 확실한 것부터 규칙으로 걸러 내고 애매한 순위 매기기만 벡터에 맡깁니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/features/searching.py",
+  "title": "왜 20개인가",
+  "blocks": [
+   {
+    "code": "N_CANDIDATES = 20",
+    "cap": "이 숫자는 재 보고 정했습니다"
+   },
+   {
+    "table": {
+     "head": [
+      "후보 수",
+      "천장 (후보 안에 정답이 있는 비율)"
+     ],
+     "rows": [
+      [
+       "@5",
+       "13.0%"
+      ],
+      [
+       "@10",
+       "21.3%"
+      ],
+      [
+       "@20",
+       "34.7%"
+      ],
+      [
+       "@30",
+       "45.3%"
+      ]
+     ]
+    }
+   },
+   {
+    "p": "<strong>\"천장\" 은 LLM 이 아무리 잘해도 못 넘는 선입니다.</strong> 후보 안에 정답이 없으면 LLM 이 고를 수가 없습니다. 후보를 늘리면 천장이 올라가지만 LLM 에게 주는 글도 길어집니다."
+   },
+   {
+    "acc": "조건을 걸면 공짜가 아닙니다",
+    "body": "이력 카테고리로 좁히면 <code>hit@5</code> 는 제일 좋아집니다. 대신 <strong>정답 생존율이 58.0%</strong> 입니다. 정답의 42% 가 후보에 들기도 전에 사라진다는 뜻입니다. 이런 맞바꿈은 재 봐야 알 수 있습니다 (<code>docs/measurements.md</code>)."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/features/searching.py",
+  "title": "검색 함수가 두 개 더 있습니다",
+  "blocks": [
+   {
+    "groups": [
+     {
+      "h": "search_chunks — 질문으로 근거 찾기",
+      "fns": [
+       "search_chunks"
+      ],
+      "p": "질문을 벡터로 바꿔 조각을 찾고, <strong>원문 섹션</strong>을 들고 옵니다. 답의 근거가 됩니다"
+     },
+     {
+      "h": "search_reviews — 후기로 비슷한 후기 찾기",
+      "fns": [
+       "search_reviews"
+      ],
+      "p": "이 고객의 최근 후기와 비슷한 불만을 쓴 다른 사람 후기를 찾습니다"
+     },
+     {
+      "h": "candidates — 추천 후보 만들기",
+      "fns": [
+       "candidates",
+       "filter_by_history_category",
+       "already_bought"
+      ],
+      "p": "앞 장의 네 단계입니다"
+     }
+    ]
+   },
+   {
+    "p": "셋 다 마지막에 <strong>벡터를 쓰지만 벡터로 끝나지 않습니다.</strong> 찾은 아이디로 DB 에서 진짜 데이터를 다시 꺼내 옵니다. 벡터 표에는 검색에 필요한 만큼만 들어 있기 때문입니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "재미있는 지점",
+  "title": "작은 것으로 찾아 큰 것을 줍니다",
+  "lead": "<code>search_chunks</code> 가 하는 일입니다. 이걸 small-to-big 이라고 부릅니다.",
+  "blocks": [
+   {
+    "fig": "<svg viewBox=\"0 0 940 250\" role=\"img\" aria-label=\"조각으로 찾아 섹션을 돌려준다\">\n  <defs>\n    <marker id=\"e4b\" markerWidth=\"9\" markerHeight=\"9\" refX=\"8\" refY=\"4.5\" orient=\"auto\">\n      <path d=\"M0 0 L9 4.5 L0 9 z\" fill=\"var(--muted)\"/></marker>\n  </defs>\n  <rect x=\"0\" y=\"20\" width=\"240\" height=\"70\" rx=\"4\" fill=\"var(--card)\" stroke=\"var(--rule)\" stroke-width=\"1.5\"/>\n  <text x=\"20\" y=\"48\" font-size=\"14\" fill=\"var(--ink)\">질문</text>\n  <text x=\"20\" y=\"72\" font-size=\"13\" fill=\"var(--muted)\">\"임산부가 써도 되나요\"</text>\n  <path d=\"M246 55 H 286\" stroke=\"var(--muted)\" stroke-width=\"2\" marker-end=\"url(#e4b)\"/>\n  <rect x=\"292\" y=\"20\" width=\"280\" height=\"70\" rx=\"4\" fill=\"var(--teal-soft)\" stroke=\"var(--teal)\" stroke-width=\"2\"/>\n  <text x=\"312\" y=\"48\" font-size=\"14\" fill=\"var(--teal)\">조각으로 찾습니다 (작은 것)</text>\n  <text x=\"312\" y=\"72\" font-size=\"13\" fill=\"var(--muted)\">평균 105토큰. 짧아서 잘 찾힙니다</text>\n  <path d=\"M578 55 H 618\" stroke=\"var(--muted)\" stroke-width=\"2\" marker-end=\"url(#e4b)\"/>\n  <rect x=\"624\" y=\"20\" width=\"306\" height=\"70\" rx=\"4\" fill=\"var(--oxide-soft)\" stroke=\"var(--oxide)\" stroke-width=\"2\"/>\n  <text x=\"644\" y=\"48\" font-size=\"14\" fill=\"var(--oxide)\">섹션을 돌려줍니다 (큰 것)</text>\n  <text x=\"644\" y=\"72\" font-size=\"13\" fill=\"var(--muted)\">원문 통째로. 답하기 좋습니다</text>\n  <text x=\"0\" y=\"140\" font-size=\"14\" fill=\"var(--ink)\">왜 이렇게 하나</text>\n  <text x=\"0\" y=\"168\" font-size=\"13.5\" fill=\"var(--muted)\">조각이 짧아야 질문과 정확히 맞습니다. 길면 다른 이야기가 섞여 흐려집니다</text>\n  <text x=\"0\" y=\"192\" font-size=\"13.5\" fill=\"var(--muted)\">그런데 답할 때는 앞뒤 맥락이 필요합니다. 조각만 주면 문장이 끊겨 있습니다</text>\n  <text x=\"0\" y=\"216\" font-size=\"13.5\" fill=\"var(--muted)\">그래서 찾는 단위와 주는 단위를 따로 둡니다</text>\n</svg>"
+   },
+   {
+    "p": "2편에서 <code>sections</code> 와 <code>chunks</code> 표를 둘 다 남긴 이유가 여기 있습니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/features/",
+  "title": "domain 에 DB 를 붙이는 파일 둘",
+  "lead": "<code>privacy.py</code> 와 <code>safety_filter.py</code> 는 둘 다 아주 짧습니다. 하는 일이 같습니다.",
+  "blocks": [
+   {
+    "vs": [
+     {
+      "k": "app/domain/masking.py",
+      "tone": "build",
+      "code": "def mask(text, *, names=(), address=None):\n    ...",
+      "p": "이름 목록을 <strong>인자로 받습니다.</strong> 어디서 왔는지 모릅니다"
+     },
+     {
+      "k": "app/features/privacy.py",
+      "tone": "build",
+      "code": "def mask_text(text):\n    _load()\n    return masking.mask(text, names=_names, ...)",
+      "p": "DB 에서 이름을 꺼내 붙여 줍니다. 앱은 이것만 부릅니다"
+     }
+    ]
+   },
+   {
+    "p": "<code>safety_filter.py</code> 도 똑같습니다. <code>domain/safety.py</code> 는 주의사항 글을 <strong>받아서</strong> 판단하고, <code>features/safety_filter.py</code> 가 DB 에서 그 글을 꺼내 줍니다."
+   },
+   {
+    "fix": "한 번만 읽고 들고 있습니다",
+    "body": "고객 이름 300개, 주의사항 200건을 요청마다 읽으면 낭비입니다. 처음 한 번만 읽고 들고 있습니다. <strong>주의사항이 바뀌면 <code>reset()</code> 을 불러 다시 읽게 합니다</strong> — 상품을 지우는 코드가 실제로 그걸 부릅니다."
+   }
+  ]
+ },
+ {
+  "layout": "statement",
+  "text": "LLM 은 없는 상품을 지어냅니다.",
+  "sub": "그걸 막는 방법 두 가지가 이 프로젝트에 들어 있습니다."
+ },
+ {
+  "eyebrow": "막는 법 하나",
+  "title": "이름 대신 번호로 답하게 합니다",
+  "blocks": [
+   {
+    "vs": [
+     {
+      "k": "이름으로 답하게 하면",
+      "tone": "pain",
+      "code": "\"수분 진정 크림을 추천합니다\"",
+      "p": "그런 상품이 실제로 있는지 코드가 확인할 방법이 마땅치 않습니다. 이름이 조금씩 다를 수도 있습니다"
+     },
+     {
+      "k": "번호로 답하게 하면",
+      "tone": "build",
+      "code": "{\"picks\": [{\"number\": 7, \"reason\": \"...\"}]}",
+      "p": "후보가 1~20번이니 7번은 있는 상품입니다. 25번이면 코드가 바로 잡아냅니다"
+     }
+    ]
+   },
+   {
+    "p": "후보 목록을 <strong>번호가 붙은 글</strong>로 만들어 프롬프트에 넣습니다 (3편의 <code>candidate_block</code>). 그리고 \"이 번호 중에서만 고르라\" 고 시킵니다."
+   },
+   {
+    "fix": "이걸 구조화 출력이라고 부릅니다",
+    "body": "자유롭게 글을 쓰게 하지 않고 <strong>정해진 모양으로 답하게</strong> 하는 것입니다. 모양이 정해져 있으면 코드가 검사할 수 있습니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "막는 법 둘",
+  "title": "검사하고, 틀리면 되돌려 줍니다",
+  "blocks": [
+   {
+    "fig": "<svg viewBox=\"0 0 940 330\" role=\"img\" aria-label=\"LLM 답을 검사하고 틀리면 다시 시키는 되돌림\">\n  <defs>\n    <marker id=\"e4c\" markerWidth=\"9\" markerHeight=\"9\" refX=\"8\" refY=\"4.5\" orient=\"auto\">\n      <path d=\"M0 0 L9 4.5 L0 9 z\" fill=\"var(--muted)\"/></marker>\n  </defs>\n  <rect x=\"0\" y=\"20\" width=\"250\" height=\"60\" rx=\"4\" fill=\"var(--card)\" stroke=\"var(--rule)\" stroke-width=\"1.5\"/>\n  <text x=\"20\" y=\"48\" font-size=\"14\" fill=\"var(--ink)\">후보 20개를 번호로</text>\n  <text x=\"20\" y=\"70\" font-size=\"13\" fill=\"var(--muted)\">프롬프트에 넣습니다</text>\n  <path d=\"M256 50 H 294\" stroke=\"var(--muted)\" stroke-width=\"2\" marker-end=\"url(#e4c)\"/>\n  <rect x=\"300\" y=\"20\" width=\"200\" height=\"60\" rx=\"4\" fill=\"var(--oxide-soft)\" stroke=\"var(--oxide)\" stroke-width=\"2\"/>\n  <text x=\"320\" y=\"48\" font-size=\"14\" fill=\"var(--oxide)\">LLM</text>\n  <text x=\"320\" y=\"70\" font-size=\"13\" fill=\"var(--muted)\">번호와 이유를 냅니다</text>\n  <path d=\"M506 50 H 544\" stroke=\"var(--muted)\" stroke-width=\"2\" marker-end=\"url(#e4c)\"/>\n  <rect x=\"550\" y=\"20\" width=\"380\" height=\"60\" rx=\"4\" fill=\"var(--teal-soft)\" stroke=\"var(--teal)\" stroke-width=\"2\"/>\n  <text x=\"570\" y=\"48\" font-size=\"14\" fill=\"var(--teal)\">코드가 검사합니다 (Pydantic)</text>\n  <text x=\"570\" y=\"70\" font-size=\"13\" fill=\"var(--muted)\">범위 · 개수 · 중복 · 이유 길이</text>\n  <path d=\"M740 84 V 116\" stroke=\"var(--teal)\" stroke-width=\"2\" marker-end=\"url(#e4c)\"/>\n  <rect x=\"550\" y=\"122\" width=\"380\" height=\"54\" rx=\"4\" fill=\"var(--card)\" stroke=\"var(--rule)\" stroke-width=\"1.5\"/>\n  <text x=\"570\" y=\"154\" font-size=\"14\" fill=\"var(--ink)\">통과하면 그대로 화면으로</text>\n  <path d=\"M550 50 H 512\" stroke=\"var(--oxide)\" stroke-width=\"2\" stroke-dasharray=\"5 4\"/>\n  <path d=\"M740 84 V 100 H 400 V 218\" stroke=\"var(--oxide)\" stroke-width=\"2\" stroke-dasharray=\"5 4\" fill=\"none\" marker-end=\"url(#e4c)\"/>\n  <rect x=\"180\" y=\"224\" width=\"560\" height=\"78\" rx=\"4\" fill=\"var(--oxide-soft)\" stroke=\"var(--oxide)\" stroke-width=\"2\"/>\n  <text x=\"200\" y=\"252\" font-size=\"14\" fill=\"var(--oxide)\">틀렸으면 무엇이 틀렸는지 적어서 다시 시킵니다</text>\n  <text class=\"m\" x=\"200\" y=\"276\" font-size=\"12.5\" fill=\"var(--muted)\">\"후보는 1~20번인데 25번을 골랐다. 다시 골라라\"</text>\n  <text x=\"200\" y=\"296\" font-size=\"13\" fill=\"var(--muted)\">두 번까지 다시 시킵니다. 그래도 안 되면 벡터 순위를 그대로 냅니다</text>\n</svg>"
+   },
+   {
+    "p": "<strong>사람에게 지적하듯 되돌려 줍니다.</strong> \"틀렸다\" 가 아니라 \"무엇이 어떻게 틀렸다\" 를 적어 보냅니다. 이전 답과 지적을 같이 넣어 다시 부릅니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/features/schemas.py",
+  "title": "검사 규칙이 여기 적혀 있습니다",
+  "blocks": [
+   {
+    "table": {
+     "head": [
+      "검사",
+      "어기면 나오는 말"
+     ],
+     "rows": [
+      [
+       "번호가 1 이상인가",
+       "번호는 1부터다 (0 을 골랐다)"
+      ],
+      [
+       "번호가 후보 안인가",
+       "후보는 1~20 번인데 25 번을 골랐다"
+      ],
+      [
+       "1~5개를 골랐나",
+       "1~5개를 골라야 한다 (지금 7개)"
+      ],
+      [
+       "같은 번호를 여러 번 안 골랐나",
+       "같은 번호를 여러 번 골랐다: [3, 3, 7]"
+      ],
+      [
+       "이유가 2~200자인가",
+       "이유는 2~200자여야 한다 (지금 412자)"
+      ]
+     ]
+    }
+   },
+   {
+    "p": "이 문장들이 그대로 LLM 에게 되돌아갑니다. <strong>사람이 읽을 수 있게 쓴 것이 곧 모델에게 줄 지적이 됩니다.</strong>"
+   },
+   {
+    "fix": "모델 두 개가 짝을 이룹니다",
+    "body": "<code>RecommendationDraft</code> 는 <strong>검사 전</strong>, <code>Recommendation</code> 은 <strong>검사 후</strong>입니다. 먼저 느슨하게 받아서 JSON 이 깨졌는지 보고, 그다음에 엄격하게 검사합니다. 둘을 갈라 두면 \"JSON 이 깨진 것\" 과 \"내용이 틀린 것\" 을 따로 다룰 수 있습니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "실제로 재 봤습니다",
+  "title": "모델마다 형식을 지키는 정도가 다릅니다",
+  "blocks": [
+   {
+    "table": {
+     "head": [
+      "모델",
+      "형식이 맞은 비율"
+     ],
+     "rows": [
+      [
+       "로컬 qwen-cpu (3B)",
+       "17/30"
+      ],
+      [
+       "상용 gpt-4o-mini",
+       "29~30/30"
+      ]
+     ]
+    }
+   },
+   {
+    "p": "로컬 3B 모델은 <strong>절반쯤 틀립니다.</strong> 그래서 되돌려 주는 장치가 없으면 로컬로는 추천이 거의 안 됩니다."
+   },
+   {
+    "fix": "그리고 실패했을 때도 화면이 안 빕니다",
+    "body": "두 번 다시 시켜도 안 되면 <strong>벡터 순위를 그대로 냅니다.</strong> 이유는 못 붙이지만 추천 목록은 나옵니다. 화면에는 \"LLM 실패\" 라고 적힙니다. 숨기지 않습니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/features/answering.py",
+  "title": "질문에 답하는 자리",
+  "lead": "34줄입니다. 함수 두 개뿐입니다.",
+  "blocks": [
+   {
+    "anat": {
+     "file": "app/features/answering.py",
+     "meta": "34줄 · 함수 2개",
+     "rows": [
+      {
+       "g": "set",
+       "n": "PRODUCT_WORDS",
+       "d": "성분 · 사용법 · 주의 · 배송 · 환불 등 14개"
+      },
+      {
+       "g": "set",
+       "n": "ANSWER_PROMPT",
+       "d": "LLM 에게 시키는 말"
+      },
+      {
+       "g": "set",
+       "n": "ANSWER_CHAIN",
+       "d": "프롬프트 | LLM | 글자만 꺼내기"
+      },
+      {
+       "g": "fn",
+       "n": "route(question)",
+       "d": "상품 질문인가 고객 분석인가"
+      },
+      {
+       "g": "fn",
+       "n": "stream(question, ...)",
+       "d": "답을 글자 조각으로 흘려보냅니다"
+      }
+     ]
+    }
+   },
+   {
+    "code": "def route(question):\n    return \"product\" if any(word in question for word in PRODUCT_WORDS) else \"customer\"",
+    "cap": "낱말이 들어 있나만 봅니다. AI 를 안 씁니다"
+   },
+   {
+    "fix": "여기에 AI 를 안 쓴 것이 선택입니다",
+    "body": "질문 종류를 가르는 데 LLM 을 한 번 더 부르면 <strong>시간도 돈도 두 배</strong>입니다. 낱말 14개로 되는 일이면 낱말로 합니다. 안 되는 게 눈에 보이면 그때 바꿉니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/features/answering.py",
+  "title": "자료 안에 있는 것만 말하게 합니다",
+  "blocks": [
+   {
+    "code": "\"너는 화장품 회사의 상담 담당자다. 주어진 '자료' 안에 있는 내용만\n 근거로 한국어로 답한다. 자료에 없으면 '자료에 없다'고 말한다.\n 지어내지 않는다. 3~5문장으로 짧게 쓴다.\"",
+    "cap": "실제 프롬프트입니다"
+   },
+   {
+    "p": "이게 RAG 의 핵심입니다. <strong>모델이 아는 것을 말하게 하는 게 아니라, 우리가 준 자료만 보고 말하게 하는 것</strong>입니다."
+   },
+   {
+    "acc": "다만 이건 부탁이지 강제가 아닙니다",
+    "body": "모델이 이 말을 안 지킬 수도 있습니다. 코드가 막을 방법이 없습니다. 추천은 번호라서 검사할 수 있었지만 답변은 자유로운 글이라 검사가 어렵습니다."
+   },
+   {
+    "fix": "그래서 근거를 답보다 먼저 보냅니다",
+    "body": "화면에 <strong>출처가 답보다 먼저 뜹니다.</strong> 사람이 \"이 답이 어느 문서에서 나왔나\" 를 눈으로 확인할 수 있습니다. 막지는 못해도 보이게는 할 수 있습니다."
+   }
+  ]
+ },
+ {
+  "layout": "statement",
+  "text": "이제 이 프로젝트가 진짜로 다루는 문제입니다.",
+  "sub": "상품을 고치면 검색용 데이터도 같이 바뀌어야 합니다."
+ },
+ {
+  "eyebrow": "app/features/products.py",
+  "title": "상품 하나를 고치면 세 군데가 움직입니다",
+  "blocks": [
+   {
+    "fig": "<svg viewBox=\"0 0 940 300\" role=\"img\" aria-label=\"상품 수정이 벡터와 조각 이름까지 바꾸는 흐름\">\n  <defs>\n    <marker id=\"e4d\" markerWidth=\"9\" markerHeight=\"9\" refX=\"8\" refY=\"4.5\" orient=\"auto\">\n      <path d=\"M0 0 L9 4.5 L0 9 z\" fill=\"var(--muted)\"/></marker>\n  </defs>\n  <rect x=\"0\" y=\"16\" width=\"930\" height=\"52\" rx=\"4\" fill=\"var(--card)\" stroke=\"var(--rule)\" stroke-width=\"1.5\"/>\n  <text class=\"m\" x=\"22\" y=\"48\" font-size=\"14.5\" fill=\"var(--ink)\">PATCH /api/products/P042   {\"price\": 32000}</text>\n  <text x=\"560\" y=\"48\" font-size=\"13.5\" fill=\"var(--muted)\">가격 하나를 고쳤습니다</text>\n  <path d=\"M155 72 V 100\" stroke=\"var(--muted)\" stroke-width=\"2\" marker-end=\"url(#e4d)\"/>\n  <path d=\"M465 72 V 100\" stroke=\"var(--muted)\" stroke-width=\"2\" marker-end=\"url(#e4d)\"/>\n  <path d=\"M775 72 V 100\" stroke=\"var(--muted)\" stroke-width=\"2\" marker-end=\"url(#e4d)\"/>\n  <rect x=\"0\" y=\"106\" width=\"300\" height=\"96\" rx=\"4\" fill=\"var(--card)\" stroke=\"var(--rule)\" stroke-width=\"1.5\"/>\n  <text x=\"20\" y=\"134\" font-size=\"14\" fill=\"var(--ink)\">1. products 표</text>\n  <text x=\"20\" y=\"158\" font-size=\"13\" fill=\"var(--muted)\">가격이 바뀝니다</text>\n  <text x=\"20\" y=\"182\" font-size=\"13\" fill=\"var(--muted)\">여기까지는 당연합니다</text>\n  <rect x=\"316\" y=\"106\" width=\"300\" height=\"96\" rx=\"4\" fill=\"var(--teal-soft)\" stroke=\"var(--teal)\" stroke-width=\"2\"/>\n  <text x=\"336\" y=\"134\" font-size=\"14\" fill=\"var(--teal)\">2. 상품 벡터</text>\n  <text x=\"336\" y=\"158\" font-size=\"13\" fill=\"var(--muted)\">검색용 문장에 가격이 들어</text>\n  <text x=\"336\" y=\"182\" font-size=\"13\" fill=\"var(--muted)\">있어서 다시 만들어야 합니다</text>\n  <rect x=\"632\" y=\"106\" width=\"298\" height=\"96\" rx=\"4\" fill=\"var(--teal-soft)\" stroke=\"var(--teal)\" stroke-width=\"2\"/>\n  <text x=\"652\" y=\"134\" font-size=\"14\" fill=\"var(--teal)\">3. 조각에 베껴 둔 이름</text>\n  <text x=\"652\" y=\"158\" font-size=\"13\" fill=\"var(--muted)\">이름을 고쳤다면 조각 표의</text>\n  <text x=\"652\" y=\"182\" font-size=\"13\" fill=\"var(--muted)\">이름도 맞춰야 합니다</text>\n  <text x=\"0\" y=\"246\" font-size=\"14\" fill=\"var(--ink)\">2번을 빠뜨리면 화면과 검색 결과가 갈립니다</text>\n  <text x=\"0\" y=\"272\" font-size=\"13.5\" fill=\"var(--muted)\">화면에는 32,000원인데 검색은 예전 가격으로 만든 벡터로 합니다. 오류는 안 납니다</text>\n</svg>"
+   },
+   {
+    "p": "<strong>README 첫 문단에 적힌 문제가 이것입니다.</strong> \"LLM 을 한 번 불러 보는 데모가 아니라, 데이터가 바뀔 때 생기는 문제를 다룬 백엔드\" 라는 말이 이 자리를 가리킵니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/features/products.py",
+  "title": "함수를 역할로 묶으면",
+  "blocks": [
+   {
+    "groups": [
+     {
+      "h": "밖에서 부르는 것",
+      "fns": [
+       "list_products",
+       "get_product",
+       "create_product",
+       "update_product",
+       "delete_product",
+       "reindex_product"
+      ],
+      "p": "API 가 이 여섯 개를 부릅니다"
+     },
+     {
+      "h": "벡터를 맞추는 것",
+      "fns": [
+       "_resync",
+       "_resync_chunk_names",
+       "_with_vector_flag"
+      ],
+      "p": "고치고 나서 검색용 데이터를 따라가게 합니다"
+     },
+     {
+      "h": "막는 것",
+      "fns": [
+       "_check_choices",
+       "ProductError"
+      ],
+      "p": "허용한 값인지 보고, 아니면 이유를 붙여 거절합니다"
+     }
+    ]
+   },
+   {
+    "code": "row[\"has_vector\"]      = mark is not None\nrow[\"needs_embedding\"] = mark != fingerprint(product_text(row))",
+    "cap": "<code>_with_vector_flag</code>. 상품 목록에 이 두 값을 붙여 줍니다"
+   },
+   {
+    "fix": "화면이 어긋난 것을 볼 수 있습니다",
+    "body": "<code>needs_embedding</code> 이 참이면 <strong>지금 글로 만든 벡터가 아니라는 뜻</strong>입니다. 화면에 표시가 뜨고, 버튼 하나로 맞출 수 있습니다 (<code>reindex</code>). 어긋남을 숨기지 않고 보여 주는 쪽을 골랐습니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/features/products.py",
+  "title": "지울 때는 통째로 지웁니다",
+  "blocks": [
+   {
+    "code": "with transaction():\n    store.delete(\"chunk\", detail_repo.chunk_ids_for_product(product_id))\n    store.delete(\"product\", [product_id])\n    detail_repo.delete_for_product(product_id)\n    product_repo.delete(product_id)",
+    "cap": "네 군데를 한 덩어리로 묶었습니다. 하나라도 터지면 전부 되돌립니다"
+   },
+   {
+    "p": "3편에서 본 <code>transaction()</code> 이 여기서 쓰입니다. <strong>반쯤 지워진 상태가 안 생깁니다.</strong>"
+   },
+   {
+    "fix": "구매 이력이 있으면 아예 안 지웁니다",
+    "body": "산 사람이 있는 상품을 지우면 그 구매 기록이 가리킬 곳을 잃습니다. 그래서 먼저 세어 보고, 있으면 <strong>\"구매 이력이 3건 있어 지울 수 없다\"</strong> 로 거절합니다. 이 판단은 <code>features</code> 가 합니다. API 는 그 이유를 HTTP 409 로 옮기기만 합니다."
+   },
+   {
+    "p": "마지막에 <code>reset_safety_filter()</code> 를 부릅니다. 주의사항이 하나 없어졌으니 들고 있던 금지 목록을 버리고 다시 읽게 하는 것입니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/features/",
+  "title": "나머지 세 파일",
+  "blocks": [
+   {
+    "table": {
+     "head": [
+      "파일",
+      "줄",
+      "하는 일"
+     ],
+     "rows": [
+      [
+       "<code>embedding_sync.py</code>",
+       "57",
+       "2편에서 본 <code>sync</code> 가 여기 있습니다. 한 건만 맞추는 <code>sync_one</code> 도 같이"
+      ],
+      [
+       "<code>readiness.py</code>",
+       "42",
+       "DB · 벡터 · 임베딩기가 섰나 셋을 물어봅니다. 하나라도 아니면 503"
+      ],
+      [
+       "<code>retrieve.py</code>",
+       "12",
+       "<code>profile</code> 과 <code>searching</code> 의 함수를 한 이름으로 모아 줍니다"
+      ]
+     ]
+    }
+   },
+   {
+    "code": "from app.features.profile import customer_list, dashboard\nfrom app.features.searching import candidates, search_chunks, search_reviews",
+    "cap": "<code>retrieve.py</code> 전부입니다. 새 코드가 없습니다"
+   },
+   {
+    "fix": "이런 파일이 왜 있나",
+    "body": "API 쪽에서 <code>from app.features import retrieve</code> 한 줄만 쓰면 됩니다. <strong>부르는 쪽이 파일이 몇 개로 갈렸는지 몰라도 됩니다.</strong> 나중에 <code>searching.py</code> 를 둘로 쪼개도 API 는 안 바뀝니다."
+   }
+  ]
+ },
+ {
+  "layout": "statement",
+  "text": "app/api/ — 주소를 받는 창구입니다.",
+  "sub": "여기서는 판단을 안 합니다. 받아서 넘기고, 결과를 HTTP 로 바꾸는 일만 합니다."
+ },
+ {
+  "eyebrow": "app/api/",
+  "title": "일곱 파일, 엔드포인트 열여섯 개",
+  "blocks": [
+   {
+    "tree": [
+     {
+      "root": "app/api/"
+     },
+     {
+      "t": "routers/health.py",
+      "d": "상태와 설정 · 4개"
+     },
+     {
+      "t": "routers/customers.py",
+      "d": "고객 · 4개"
+     },
+     {
+      "t": "routers/products.py",
+      "d": "상품 · 7개"
+     },
+     {
+      "t": "routers/ask.py",
+      "d": "질의응답 · 1개"
+     },
+     {
+      "t": "dependencies.py",
+      "d": "부르기 전에 통과해야 하는 관문들",
+      "hi": true
+     },
+     {
+      "t": "errors.py",
+      "d": "내부 오류를 HTTP 상태로 옮깁니다"
+     },
+     {
+      "t": "lifespan.py",
+      "d": "서버가 뜰 때 한 번"
+     },
+     {
+      "t": "app/main.py",
+      "d": "이 폴더 밖입니다. 위의 것들을 조립합니다"
+     }
+    ]
+   },
+   {
+    "p": "<code>app/api/</code> 는 일곱 파일 360줄입니다. <strong>SQL 도 없고 <code>sqlite</code> 라는 글자도 없습니다.</strong> CI 가 그걸 검사합니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/api/dependencies.py",
+  "title": "부르기 전에 통과할 관문 넷",
+  "blocks": [
+   {
+    "table": {
+     "head": [
+      "관문",
+      "하는 일",
+      "막히면"
+     ],
+     "rows": [
+      [
+       "<code>caller</code>",
+       "토큰이 맞나 · 누구를 대신해 부르나",
+       "401 · 400"
+      ],
+      [
+       "<code>guard</code>",
+       "오늘 한도가 남았나. 한 칸을 잡습니다",
+       "429"
+      ],
+      [
+       "<code>meter</code>",
+       "이 요청이 누구의 무슨 기능인지 적어 둡니다",
+       "안 막습니다"
+      ],
+      [
+       "<code>writable</code>",
+       "상품 쓰기 문이 열려 있나",
+       "405"
+      ]
+     ]
+    }
+   },
+   {
+    "code": "def customer(customer_id: str, user: str = Depends(caller)):",
+    "cap": "<code>Depends(caller)</code> 한 마디면 이 함수가 돌기 전에 <code>caller</code> 가 먼저 돕니다"
+   },
+   {
+    "fix": "관문을 함수 안에 안 넣는 것이 요점입니다",
+    "body": "인증 코드를 엔드포인트마다 복사해 넣으면 <strong>언젠가 한 군데를 빠뜨립니다.</strong> 선언 자리에 한 마디 붙이는 방식이면 빠뜨린 게 눈에 보입니다."
+   },
+   {
+    "p": "<code>writable</code> 은 조금 다릅니다. \"상품 원본을 이 서버가 소유하지 않는 배치\" 로 갈 때를 위한 스위치입니다. 꺼 두면 상품 쓰기 API 가 405 를 내고, 벡터만 맞추는 <code>reindex</code> 는 계속 됩니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/api/routers/customers.py",
+  "title": "라우터 한 개를 통째로 보면",
+  "blocks": [
+   {
+    "calls": [
+     {
+      "s": "GET /api/customers",
+      "d": "고객 목록",
+      "fns": [
+       "retrieve.customer_list"
+      ]
+     },
+     {
+      "s": "GET /api/customers/{id}",
+      "d": "고객 한 명의 판",
+      "fns": [
+       "retrieve.dashboard"
+      ]
+     },
+     {
+      "s": "GET /api/customers/{id}/similar-reviews",
+      "d": "비슷한 후기",
+      "fns": [
+       "retrieve.search_reviews",
+       "mask_text",
+       "meter"
+      ]
+     },
+     {
+      "s": "GET /api/customers/{id}/recommend",
+      "d": "추천",
+      "fns": [
+       "retrieve.candidates",
+       "recommending.recommend",
+       "guard"
+      ]
+     }
+    ]
+   },
+   {
+    "p": "네 개 다 <strong>부르고 · 없으면 404 를 내고 · 결과를 그대로 돌려주는</strong> 모양입니다. 계산이 없습니다. 75줄인데 그중 절반이 선언입니다."
+   },
+   {
+    "code": "def _board(customer_id):\n    board = retrieve.dashboard(customer_id)\n    if board is None:\n        raise HTTPException(status_code=404, detail=\"그런 고객이 없다\")\n    return board",
+    "cap": "세 엔드포인트가 같은 판정을 씁니다. \"없으면 404\" 를 한 자리에 모았습니다"
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/api/routers/ask.py",
+  "title": "답을 기다리지 않고 흘려보냅니다",
+  "lead": "이 프로젝트에서 유일하게 응답 방식이 다른 엔드포인트입니다.",
+  "blocks": [
+   {
+    "fig": "<svg viewBox=\"0 0 940 300\" role=\"img\" aria-label=\"NDJSON 으로 route sources delta done 을 차례로 보낸다\">\n  <defs>\n    <marker id=\"e4e\" markerWidth=\"9\" markerHeight=\"9\" refX=\"8\" refY=\"4.5\" orient=\"auto\">\n      <path d=\"M0 0 L9 4.5 L0 9 z\" fill=\"var(--muted)\"/></marker>\n  </defs>\n  <text x=\"0\" y=\"16\" font-size=\"14\" fill=\"var(--muted)\">한 줄에 JSON 하나씩. 만들어지는 대로 보냅니다</text>\n  <rect x=\"0\" y=\"28\" width=\"930\" height=\"46\" rx=\"4\" fill=\"var(--teal-soft)\" stroke=\"var(--teal)\" stroke-width=\"1.5\"/>\n  <text class=\"m\" x=\"22\" y=\"57\" font-size=\"14\" fill=\"var(--teal)\">{\"type\": \"route\", \"kind\": \"product\"}</text>\n  <text x=\"520\" y=\"57\" font-size=\"13.5\" fill=\"var(--muted)\">어느 길로 갈지 정했다</text>\n  <path d=\"M465 78 V 96\" stroke=\"var(--muted)\" stroke-width=\"2\" marker-end=\"url(#e4e)\"/>\n  <rect x=\"0\" y=\"102\" width=\"930\" height=\"46\" rx=\"4\" fill=\"var(--teal-soft)\" stroke=\"var(--teal)\" stroke-width=\"2\"/>\n  <text class=\"m\" x=\"22\" y=\"131\" font-size=\"14\" fill=\"var(--teal)\">{\"type\": \"sources\", \"sources\": [ ... ]}</text>\n  <text x=\"520\" y=\"131\" font-size=\"13.5\" fill=\"var(--teal)\">근거가 답보다 먼저 나옵니다</text>\n  <path d=\"M465 152 V 170\" stroke=\"var(--muted)\" stroke-width=\"2\" marker-end=\"url(#e4e)\"/>\n  <rect x=\"0\" y=\"176\" width=\"930\" height=\"46\" rx=\"4\" fill=\"var(--card)\" stroke=\"var(--rule)\" stroke-width=\"1.5\"/>\n  <text class=\"m\" x=\"22\" y=\"205\" font-size=\"14\" fill=\"var(--ink)\">{\"type\": \"delta\", \"text\": \"이 제품은\"}   ...   여러 번</text>\n  <text x=\"640\" y=\"205\" font-size=\"13.5\" fill=\"var(--muted)\">글자가 나오는 대로</text>\n  <path d=\"M465 226 V 244\" stroke=\"var(--muted)\" stroke-width=\"2\" marker-end=\"url(#e4e)\"/>\n  <rect x=\"0\" y=\"250\" width=\"930\" height=\"46\" rx=\"4\" fill=\"var(--card)\" stroke=\"var(--rule)\" stroke-width=\"1.5\"/>\n  <text class=\"m\" x=\"22\" y=\"279\" font-size=\"14\" fill=\"var(--ink)\">{\"type\": \"done\"}</text>\n  <text x=\"520\" y=\"279\" font-size=\"13.5\" fill=\"var(--muted)\">끝. 여기서 사용량을 정산합니다</text>\n</svg>"
+   },
+   {
+    "p": "<strong>근거를 답보다 먼저 보내는 것이 이 설계의 요점입니다.</strong> 사람이 답을 읽기 시작할 때 이미 출처가 화면에 있습니다. \"이 답이 어디서 나왔나\" 를 나중에 묻지 않아도 됩니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/api/routers/health.py",
+  "title": "살아 있는 것과 준비된 것은 다릅니다",
+  "blocks": [
+   {
+    "vs": [
+     {
+      "k": "GET /health",
+      "tone": "build",
+      "code": "{\"ok\": true, \"backend\": \"local\",\n \"llm\": \"qwen-cpu\", ... }",
+      "p": "프로세스가 살아 있나만 봅니다. 늘 200 입니다"
+     },
+     {
+      "k": "GET /ready",
+      "tone": "build",
+      "code": "{\"ready\": false,\n \"checks\": {\"db\": true, \"vectors\": true,\n            \"embedder\": false}}",
+      "p": "DB · 벡터 · 임베딩기에 실제로 물어봅니다. 아니면 503"
+     }
+    ]
+   },
+   {
+    "p": "둘 다 <strong>토큰 없이 열려 있습니다.</strong> 감시 도구가 부르는 자리라서입니다. 대신 여기서는 비밀이 될 만한 것을 안 냅니다."
+   },
+   {
+    "fix": "이 구분이 배포할 때 쓰입니다",
+    "body": "서버는 떴는데 449MB 모델이 아직 안 올라온 순간이 있습니다. 그때 <code>/health</code> 는 200 이지만 <code>/ready</code> 는 503 입니다. <strong>준비되기 전에 손님을 받지 않게</strong> 하는 스위치입니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "app/api/",
+  "title": "나머지 셋",
+  "blocks": [
+   {
+    "table": {
+     "head": [
+      "파일",
+      "줄",
+      "하는 일"
+     ],
+     "rows": [
+      [
+       "<code>errors.py</code>",
+       "13",
+       "<code>features</code> 가 던진 거절 이유를 HTTP 상태로 옮깁니다. <code>not_found</code>→404 · <code>conflict</code>→409 · <code>validation</code>→422"
+      ],
+      [
+       "<code>lifespan.py</code>",
+       "36",
+       "뜰 때 한 번. 표 모양을 맞추고 · 벡터를 미리 읽고 · 임베딩기를 올립니다"
+      ],
+      [
+       "<code>app/main.py</code>",
+       "23",
+       "라우터 넷을 붙이고 화면 폴더를 붙입니다. 조립만 합니다"
+      ]
+     ]
+    }
+   },
+   {
+    "code": "for module in (health, customers, products, ask):\n    app.include_router(module.router)\n\nif Path(WEB_DIR).is_dir():\n    app.mount(\"/\", StaticFiles(directory=WEB_DIR, html=True), name=\"web\")",
+    "cap": "<code>main.py</code> 의 알맹이입니다. 이게 전부입니다"
+   },
+   {
+    "fix": "화면 폴더가 없어도 서버는 뜹니다",
+    "body": "<code>if</code> 로 감싸 두었습니다. 없으면 경고만 찍고 API 는 그대로 돕니다. <strong>앞단 서버가 따로 생기는 날</strong> 화면을 빼도 되게 해 둔 것입니다."
+   }
+  ]
+ },
+ {
+  "layout": "statement",
+  "text": "web/ — 화면은 파일 한 장입니다.",
+  "sub": "841줄. 빌드 도구도 프레임워크도 없습니다."
+ },
+ {
+  "eyebrow": "web/index.html",
+  "title": "화면이 하는 일",
+  "blocks": [
+   {
+    "groups": [
+     {
+      "h": "부르기",
+      "fns": [
+       "api",
+       "authHeaders",
+       "select",
+       "loadRecommend",
+       "ask",
+       "loadProducts"
+      ],
+      "p": "주소를 부르고 결과를 화면에 그립니다"
+     },
+     {
+      "h": "그리기",
+      "fns": [
+       "areaChart",
+       "barsChart",
+       "donutChart",
+       "drawList",
+       "drawProductList"
+      ],
+      "p": "그래프를 SVG 로 직접 그립니다. 차트 라이브러리를 안 씁니다"
+     },
+     {
+      "h": "상품 관리",
+      "fns": [
+       "openProduct",
+       "saveProduct",
+       "deleteProduct",
+       "field"
+      ],
+      "p": "등록 · 수정 · 삭제 폼"
+     },
+     {
+      "h": "안전",
+      "fns": [
+       "esc",
+       "paintPII"
+      ],
+      "p": "HTML 로 해석될 글자를 막고, 개인정보처럼 보이는 것을 빨갛게 칠합니다"
+     }
+    ]
+   },
+   {
+    "code": "const authHeaders = (extra = {}) => (\n  {Authorization: `Bearer ${TOKEN}`, 'X-User-Id': USER_ID, ...extra});",
+    "cap": "토큰을 붙이는 자리가 여기 하나입니다. 모든 요청이 이걸 지납니다"
+   },
+   {
+    "acc": "paintPII 는 가리는 게 아닙니다",
+    "body": "화면에서 빨갛게 <strong>칠하기만</strong> 합니다. 실제로 가리는 것은 서버가 합니다. 화면에서 가리면 브라우저 개발자 도구로 원본이 그대로 보입니다. <strong>가리는 일은 반드시 서버에서 해야 합니다.</strong>"
+   }
+  ]
+ },
+ {
+  "eyebrow": "web/index.html",
+  "title": "흘러오는 답을 받는 법",
+  "blocks": [
+   {
+    "code": "const reader = res.body.getReader();\nwhile (true) {\n  const {done, value} = await reader.read();\n  if (done) break;\n  ...   // 줄 단위로 잘라 JSON 하나씩 처리\n}",
+    "cap": "다 오기를 기다리지 않고 오는 대로 읽습니다"
+   },
+   {
+    "p": "받은 <code>type</code> 에 따라 다른 자리에 그립니다. <code>sources</code> 는 출처 상자에, <code>delta</code> 는 답 상자에 이어 붙입니다."
+   },
+   {
+    "fix": "첫 글자까지 걸린 시간을 화면에 찍습니다",
+    "body": "\"첫 글자 1.4s · 전체 8.2s\" 처럼 나옵니다. <strong>스트리밍의 값어치가 이 두 숫자의 차이</strong>입니다. 안 하면 8.2초 동안 빈 화면을 보게 됩니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "정리",
+  "title": "추천 요청 하나를 끝까지",
+  "blocks": [
+   {
+    "calls": [
+     {
+      "s": "web/index.html",
+      "d": "추천 버튼을 누릅니다",
+      "fns": [
+       "loadRecommend",
+       "authHeaders"
+      ]
+     },
+     {
+      "s": "app/api/routers/customers.py",
+      "d": "토큰 · 한도를 보고 넘깁니다",
+      "fns": [
+       "caller",
+       "guard",
+       "_board"
+      ]
+     },
+     {
+      "s": "app/features/searching.py",
+      "d": "후보를 좁힙니다",
+      "fns": [
+       "candidates",
+       "blocked_for"
+      ]
+     },
+     {
+      "s": "app/repositories/",
+      "d": "SQL 로 꺼냅니다",
+      "fns": [
+       "history_category_product_ids",
+       "bought_product_ids",
+       "find_cards"
+      ]
+     },
+     {
+      "s": "app/adapters/stores/",
+      "d": "벡터로 순위를 매깁니다",
+      "fns": [
+       "get_vector",
+       "search"
+      ]
+     },
+     {
+      "s": "app/features/recommending.py",
+      "d": "LLM 에게 고르게 하고 검사합니다",
+      "fns": [
+       "recommend",
+       "readable"
+      ]
+     },
+     {
+      "s": "app/core/",
+      "d": "토큰 수와 원가를 적습니다",
+      "fns": [
+       "settle",
+       "cost_of"
+      ]
+     }
+    ]
+   },
+   {
+    "p": "<strong>일곱 자리를 지납니다.</strong> 그런데 각 자리가 하는 일은 하나씩입니다. 이게 폴더를 나눈 값어치입니다 — 어디가 잘못됐는지 찾을 때 한 자리씩 보면 됩니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "되짚기",
+  "title": "이 편에서 본 것",
+  "blocks": [
+   {
+    "goals": [
+     {
+      "n": "01",
+      "t": "추천은 SQL 로 세 번 좁히고 벡터로 한 번 순위를 매깁니다. LLM 은 마지막입니다"
+     },
+     {
+      "n": "02",
+      "t": "번호로 답하게 하고, 틀리면 무엇이 틀렸는지 적어 되돌려 줍니다"
+     },
+     {
+      "n": "03",
+      "t": "API 는 판단을 안 합니다. 관문을 세우고 넘기고 HTTP 로 옮깁니다"
+     },
+     {
+      "n": "04",
+      "t": "상품을 고치면 벡터와 조각 이름까지 따라 바뀝니다. 안 하면 조용히 갈립니다"
+     }
+    ]
+   },
+   {
+    "p": "다음 편은 <strong>이게 다 맞게 돌고 있는지 재는 자리</strong>입니다."
+   }
+  ]
+ },
+ {
+  "eyebrow": "예상 질문",
+  "title": "추천에 LLM 이 꼭 필요한가",
+  "blocks": [
+   {
+    "qa": "벡터 순위 상위 다섯 개를 그냥 주면 안 되나요.",
+    "a": "됩니다. 실제로 <code>use_llm=false</code> 로 부르면 그렇게 나옵니다. LLM 이 더하는 것은 <strong>\"왜 이 사람에게 맞는가\" 한 문장</strong>입니다. 정확도가 올라가는지는 자의 흔들림(30명 표본에서 16.7%p)보다 작으면 못 믿습니다.",
+    "src": "<code>app/api/routers/customers.py</code> 의 <code>use_llm</code> · <code>eval/golden.py</code>",
+    "tail": "그럼 이유 한 문장이 그 값을 하나, 로 이어집니다",
+    "do": "<code>/api/customers/C001/recommend?use_llm=false</code> 를 불러 보세요. 같은 다섯 개가 이유 없이 나옵니다"
+   }
+  ]
+ },
+ {
+  "eyebrow": "예상 질문",
+  "title": "API 가 너무 얇은 것 아닌가",
+  "blocks": [
+   {
+    "qa": "라우터에 코드가 거의 없는데 이럴 거면 왜 층을 나누나요.",
+    "a": "얇은 것이 목표였습니다. API 에 판단이 들어가면 <strong>그 판단을 시험하려고 HTTP 요청을 만들어야 합니다.</strong> <code>features</code> 에 있으면 함수를 그냥 부르면 됩니다. 그리고 앞단이 Spring 으로 바뀌어도 <code>features</code> 는 그대로 남습니다.",
+    "src": "<code>app/api/routers/customers.py</code> (75줄) · <code>app/features/searching.py</code> (132줄)",
+    "tail": "그럼 API 시험은 무엇을 보나 — 관문과 상태 코드입니다 (5편)",
+    "do": "<code>app/api/routers/</code> 의 네 파일을 열어 보세요. <code>if</code> 문이 거의 없습니다"
+   }
+  ]
+ },
+ {
+  "eyebrow": "예상 질문",
+  "title": "화면에 토큰이 들어 있는데 괜찮나",
+  "blocks": [
+   {
+    "qa": "<code>web/index.html</code> 이 서비스 토큰을 갖고 있으면 아무나 볼 수 있는 것 아닌가요.",
+    "a": "<strong>맞습니다. 그대로 공개 배포하면 안 됩니다.</strong> 지금은 화면이 앞단 서버 노릇을 하느라 토큰을 들고 있습니다. <code>APP_ENV=prod</code> 면 기본 토큰으로는 서버가 안 뜨게 막아 뒀지만, 앞단 서버를 세우거나 쓰기를 닫기 전까지는 여전히 공개하면 안 됩니다.",
+    "src": "<code>README.md</code> \"아직 안 한 것\" · <code>app/core/auth.py</code>",
+    "tail": "앞단 서버가 생기면 토큰은 그쪽으로 옮겨 갑니다",
+    "do": "<code>.env</code> 에 <code>PRODUCT_WRITE_ENABLED=0</code> 을 넣고 서버를 띄워 보세요. 상품 쓰기가 405 로 막히고 <code>reindex</code> 만 남습니다"
+   }
+  ]
+ },
+ {
+  "layout": "cover",
+  "eyebrow": "4편 끝",
+  "num": "→ 05",
+  "title": "다음은 맞게 도는지 재는 자리입니다",
+  "lead": "시험 102개가 무엇을 지키고 있는지, 품질을 어떻게 숫자로 재는지, 그리고 아직 안 해 본 것이 무엇인지를 봅니다."
+ }
+];
+
+const stage = document.getElementById('stage');
+const prog = document.getElementById('prog');
+const railno = document.getElementById('railno');
+const count = document.getElementById('count');
+const idx = document.getElementById('idx');
+
+function chips(names) {
+  return names.map(function (n) { return '<span class="fn">' + n + '</span>'; }).join('');
+}
+
+function block(b) {
+  if (b.p) return '<p>' + b.p + '</p>';
+  if (b.code) return '<pre class="' + (b.bad ? 'bad' : '') + '"><code>' + b.code + '</code></pre>'
+    + (b.cap ? '<p class="cap">' + b.cap + '</p>' : '');
+  if (b.acc) return '<div class="acc"><h3>' + b.acc + '</h3><p>' + b.body + '</p></div>';
+  if (b.fix) return '<div class="fix"><h3>' + b.fix + '</h3><p>' + b.body + '</p></div>';
+  if (b.strata) return '<div class="strata">' + b.strata.map(function (r) {
+    var hi = r.hi ? ' hi' : '';
+    return '<div class="band-n' + hi + '">' + r.n + '</div>'
+      + '<div class="band-d' + hi + '">' + r.d + '</div>';
+  }).join('') + '</div>';
+  if (b.flow) return '<div class="flow">' + b.flow.map(function (f, i) {
+    return (i ? '<span class="arrow">&rarr;</span>' : '')
+      + '<span class="step ' + (f.on ? 'on' : '') + '">' + f.t + '</span>';
+  }).join('') + '</div>';
+  if (b.cards) return '<div class="cards ' + (b.cards.length > 2 ? 'three' : 'two') + '">'
+    + b.cards.map(function (c) {
+      return '<div class="card">' + (c.k ? '<div class="k">' + c.k + '</div>' : '')
+        + (c.h ? '<h3>' + c.h + '</h3>' : '') + '<p>' + c.p + '</p></div>';
+    }).join('') + '</div>';
+  if (b.vs) return '<div class="vs">' + b.vs.map(function (v) {
+    return '<div><div class="eyebrow ' + (v.tone || '') + '">' + v.k + '</div>'
+      + (v.code ? '<pre class="' + (v.tone === 'pain' ? 'bad' : '') + '"><code>' + v.code + '</code></pre>' : '')
+      + '<p class="sub">' + v.p + '</p></div>';
+  }).join('') + '</div>';
+  if (b.table) return '<div class="scroll"><table><thead><tr>'
+    + b.table.head.map(function (x) { return '<th>' + x + '</th>'; }).join('')
+    + '</tr></thead><tbody>' + b.table.rows.map(function (r) {
+      return '<tr>' + r.map(function (c, i) {
+        var num = i > 0 && /^[0-9$.,%~+→-]+$/.test(String(c));
+        return '<td class="' + (num ? 'n' : '') + '">' + c + '</td>';
+      }).join('') + '</tr>';
+    }).join('') + '</tbody></table></div>';
+  if (b.qa) return '<div class="qa">'
+    + '<div class="q"><span class="mk">Q.</span><p>' + b.qa + '</p></div>'
+    + '<div class="a"><span class="mk">A.</span><p>' + b.a + '</p></div>'
+    + '<div class="meta"><div><b>근거</b>' + b.src + '</div>'
+    + (b.tail ? '<div class="tail"><b>꼬리</b>' + b.tail + '</div>' : '')
+    + '</div>'
+    + (b.do ? '<div class="do"><div class="k">이렇게 해 두세요</div><p>' + b.do + '</p></div>' : '')
+    + '</div>';
+  if (b.tree) return '<div class="tree">' + b.tree.map(function (r) {
+    if (r.root) return '<div class="root">' + r.t + '</div>';
+    var hi = r.hi ? ' hi' : '';
+    return '<div class="t' + hi + '">' + r.t + '</div>'
+      + '<div class="d' + hi + '">' + (r.d || '') + '</div>';
+  }).join('') + '</div>';
+  /* 파일 구조표. 배지 · 코드에 있는 이름 · 하는 일 */
+  if (b.anat) {
+    var LABEL = { doc: '설명글', imp: 'import', set: '설정값', fn: '함수', cls: '클래스', run: '실행문' };
+    return '<div class="anat"><div class="hd"><div class="f">' + b.anat.file + '</div>'
+      + '<div class="m">' + (b.anat.meta || '') + '</div></div>'
+      + '<div class="rows">' + b.anat.rows.map(function (r) {
+        return '<div class="c-g"><span class="g g-' + r.g + '">' + (LABEL[r.g] || r.g) + '</span></div>'
+          + '<div class="c-n">' + r.n + '</div>'
+          + '<div class="c-d">' + (r.d || '') + '</div>';
+      }).join('') + '</div></div>';
+  }
+  /* 들어오는 것 · 하는 일 · 나가는 것 */
+  if (b.io) return '<div class="io">'
+    + '<div class="box"><div class="k">들어오는 것</div><ul>'
+    + b.io.in.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></div>'
+    + '<div class="ar">&rarr;</div>'
+    + '<div class="box mid"><div class="k">하는 일</div><p>' + b.io.does + '</p></div>'
+    + '<div class="ar">&rarr;</div>'
+    + '<div class="box"><div class="k">나가는 것</div><ul>'
+    + b.io.out.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></div>'
+    + '</div>';
+  /* 실행 구간이 어떤 함수를 부르나 */
+  if (b.calls) return '<div class="calls">' + b.calls.map(function (c) {
+    return '<div class="s"><b>' + c.s + '</b>'
+      + (c.d ? '<span>' + c.d + '</span>' : '') + '</div>'
+      + '<div class="fns">'
+      + (c.fns.length ? chips(c.fns) : '<span class="none">부르는 함수 없음</span>')
+      + '</div>';
+  }).join('') + '</div>';
+  /* 함수를 역할별로 묶어 보여 준다 */
+  if (b.groups) return '<div class="groups">' + b.groups.map(function (g) {
+    return '<div class="gr"><h3>' + g.h + '</h3>'
+      + '<div class="fns">' + chips(g.fns) + '</div><p>' + g.p + '</p></div>';
+  }).join('') + '</div>';
+  if (b.goals) return '<div class="goals">' + b.goals.map(function (g) {
+    return '<div class="go"><div class="no">' + g.n + '</div><div class="tx">' + g.t + '</div></div>';
+  }).join('') + '</div>';
+  /* 함수가 무엇을 받아 무엇을 돌려주나 */
+  if (b.sig) {
+    var rows = [];
+    if (b.sig.in && b.sig.in.length) {
+      b.sig.in.forEach(function (x, i) {
+        rows.push([i ? '' : '받는 것', x[0], x[1]]);
+      });
+    } else {
+      rows.push(['받는 것', '없음', '인자를 받지 않습니다']);
+    }
+    b.sig.out.forEach(function (x, i) { rows.push([i ? '' : '돌려주는 것', x[0], x[1]]); });
+    return '<div class="sig">' + rows.map(function (r) {
+      return '<div class="k">' + r[0] + '</div><div class="v">' + r[1]
+        + '</div><div class="d">' + r[2] + '</div>';
+    }).join('') + '</div>';
+  }
+  if (b.terms) return '<div class="terms">' + b.terms.map(function (t) {
+    return '<div class="k">' + t.k + '</div><div class="p">' + t.p + '</div>';
+  }).join('') + '</div>';
+  if (b.fig) return '<div class="fig">' + b.fig + '</div>'
+    + (b.cap ? '<p class="cap">' + b.cap + '</p>' : '');
+  if (b.list) return '<ul>' + b.list.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>';
+  if (b.drill) return '<div class="drill"><div class="k">실습</div><h3>' + b.drill + '</h3>'
+    + (b.code ? '<pre><code>' + b.code + '</code></pre>' : '') + '<p>' + b.body + '</p></div>';
+  return '';
+}
+
+function render(s) {
+  const el = document.createElement('section');
+  el.className = 'slide';
+  el.setAttribute('aria-hidden', 'true');
+  let h = '';
+  if (s.eyebrow) h += '<div class="eyebrow ' + (s.tone || '') + '">' + s.eyebrow + '</div>';
+  if (s.layout === 'cover') {
+    h += '<div class="cover"><div class="num">' + s.num + '</div><h1>' + s.title + '</h1>'
+      + (s.lead ? '<p class="lead">' + s.lead + '</p>' : '') + '</div>';
+  } else if (s.layout === 'statement') {
+    h += '<p class="statement">' + s.text + '</p>'
+      + (s.sub ? '<p class="sub" style="margin-top:22px">' + s.sub + '</p>' : '');
+  } else {
+    if (s.title) h += '<h2' + (s.kind === 'fn' ? ' class="fn-title"' : '') + '>' + s.title + '</h2>';
+    if (s.lead) h += '<p class="lead">' + s.lead + '</p>';
+    (s.blocks || []).forEach(function (b) { h += block(b); });
+  }
+  el.innerHTML = h;
+  return el;
+}
+
+const nodes = S.map(render);
+nodes.forEach(function (n) { stage.appendChild(n); });
+
+let cur = 0;
+function show(i) {
+  cur = Math.max(0, Math.min(S.length - 1, i));
+  nodes.forEach(function (n, j) {
+    n.classList.toggle('on', j === cur);
+    n.setAttribute('aria-hidden', j === cur ? 'false' : 'true');
+  });
+  prog.style.width = ((cur + 1) / S.length * 100) + '%';
+  railno.textContent = cur + 1;
+  count.textContent = (cur + 1) + ' / ' + S.length;
+  try { localStorage.setItem('deck-e4', String(cur)); } catch (e) {}
+}
+
+document.getElementById('idxlist').innerHTML = S.map(function (s, i) {
+  return '<li tabindex="0" data-i="' + i + '" class="' + (s.layout === 'cover' ? 'ch' : '') + '">'
+    + '<span>' + (i + 1) + '</span>' + (s.title || s.text || '') + '</li>';
+}).join('');
+document.getElementById('idxlist').addEventListener('click', function (e) {
+  const li = e.target.closest('li'); if (!li) return;
+  show(+li.dataset.i); idx.classList.remove('on');
+});
+document.getElementById('idxlist').addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  const li = e.target.closest('li'); if (!li) return;
+  show(+li.dataset.i); idx.classList.remove('on');
+});
+document.getElementById('idxbtn').addEventListener('click', function () { idx.classList.toggle('on'); });
+
+document.addEventListener('keydown', function (e) {
+  if (e.target.tagName === 'BUTTON' && e.key === ' ') return;
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { show(cur + 1); e.preventDefault(); }
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp') { show(cur - 1); e.preventDefault(); }
+  if (e.key === 'Home') show(0);
+  if (e.key === 'End') show(S.length - 1);
+  if (e.key.toLowerCase() === 'm') idx.classList.toggle('on');
+  if (e.key === 'Escape') idx.classList.remove('on');
+});
+
+let start = 0;
+try { start = Math.min(parseInt(localStorage.getItem('deck-e4') || '0', 10) || 0, S.length - 1); } catch (e) {}
+show(start);
+</script>

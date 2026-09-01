@@ -1,0 +1,974 @@
+<title>질문 하나가 지나가는 길</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --paper:#F1F3F4; --card:#FBFCFC; --ink:#17212B; --muted:#5A6672;
+  --rule:#D3D9DD; --rule-soft:#E4E9EB; --chip:#E7ECEE; --grid:#E9EDEF;
+  --oxide:#B4501E; --oxide-soft:#F7E9E0;
+  --teal:#16697A; --teal-soft:#DFEDEF;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:#131A20; --card:#1B242C; --ink:#E4E9EC; --muted:#93A1AC;
+    --rule:#2C3842; --rule-soft:#232E37; --chip:#232E37; --grid:#1E2831;
+    --oxide:#E08A55; --oxide-soft:#3A2418;
+    --teal:#63B0C0; --teal-soft:#16303A;
+  }
+}
+:root[data-theme="dark"] {
+  --paper:#131A20; --card:#1B242C; --ink:#E4E9EC; --muted:#93A1AC;
+  --rule:#2C3842; --rule-soft:#232E37; --chip:#232E37; --grid:#1E2831;
+  --oxide:#E08A55; --oxide-soft:#3A2418;
+  --teal:#63B0C0; --teal-soft:#16303A;
+}
+
+* { box-sizing:border-box; }
+html, body { height:100%; }
+body {
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans KR", system-ui, -apple-system, sans-serif;
+  line-height:1.72; -webkit-font-smoothing:antialiased;
+}
+:focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
+
+.deck { height:100%; display:flex; flex-direction:column; }
+
+.bar {
+  flex:0 0 auto; display:flex; align-items:center; gap:18px;
+  padding:0 20px; height:50px;
+  background:var(--card); border-bottom:1px solid var(--rule);
+}
+.mark {
+  font-family:"Gowun Batang", Georgia, serif; font-weight:700; font-size:17px;
+  white-space:nowrap; letter-spacing:-.015em;
+}
+.mark span { color:var(--teal); }
+.bar .spacer { flex:1; }
+.phase {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11px;
+  letter-spacing:.05em; text-transform:uppercase; color:var(--muted);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.count {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:13px;
+  color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.count b { color:var(--ink); font-weight:500; }
+.nav-btn {
+  width:34px; height:28px; border:1px solid var(--rule); border-radius:4px;
+  background:transparent; color:var(--ink); cursor:pointer;
+  font-size:14.5px; line-height:1; display:grid; place-items:center;
+}
+.nav-btn:hover { background:var(--chip); }
+.nav-btn:disabled { opacity:.32; cursor:default; }
+.track { flex:0 0 auto; height:2px; background:var(--rule-soft); }
+.track i { display:block; height:100%; background:var(--teal); transition:width .2s ease; }
+
+.split { flex:1; min-height:0; display:grid; grid-template-columns:60% 40%; }
+
+.figure {
+  min-width:0; overflow:auto; padding:26px 24px 32px;
+  display:flex; flex-direction:column; align-items:center;
+  /* safe center 라야 그림이 칸보다 클 때 위쪽이 안 잘린다 */
+  justify-content:center; justify-content:safe center;
+  gap:14px; border-right:1px solid var(--rule);
+  background-image:linear-gradient(var(--grid) 1px, transparent 1px),
+                   linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:28px 28px;
+}
+.figure svg { width:100%; max-width:750px; height:auto; display:block; flex:0 0 auto; }
+.figcap {
+  font-size:13.5px; color:var(--muted); text-align:center; max-width:700px;
+  background:var(--paper); padding:2px 10px; border-radius:3px; flex:0 0 auto;
+}
+
+/* 그림 안의 공통 조각 */
+.b-off  { fill:var(--card); stroke:var(--rule); stroke-width:1; }
+.b-on   { fill:var(--teal-soft); stroke:var(--teal); stroke-width:1.6; }
+.b-warn { fill:var(--oxide-soft); stroke:var(--oxide); stroke-width:1.6; }
+.b-ghost{ fill:none; stroke:var(--rule); stroke-width:1; stroke-dasharray:3 3; }
+.t1 { font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:12.5px;
+      fill:var(--ink); text-anchor:middle; }
+.t2 { font-family:"IBM Plex Sans KR", sans-serif; font-size:11px;
+      fill:var(--muted); text-anchor:middle; }
+.t3 { font-family:"IBM Plex Sans KR", sans-serif; font-size:11px;
+      fill:var(--muted); text-anchor:middle; }
+.b-ont { fill:var(--teal); }
+.b-warnt { fill:var(--oxide); }
+.lft { text-anchor:start; }
+.rgt { text-anchor:end; }
+.ar { stroke:var(--muted); stroke-width:1.4; fill:none; }
+.ar-on { stroke:var(--teal); stroke-width:2; fill:none; }
+.ar-warn { stroke:var(--oxide); stroke-width:1.8; fill:none; }
+.arh { fill:var(--muted); }
+.arh-on { fill:var(--teal); }
+.arh-warn { fill:var(--oxide); }
+
+.notes { min-width:0; overflow-y:auto; padding:28px 28px 58px; }
+.notes-in { max-width:660px; display:flex; flex-direction:column; gap:21px; }
+.eyebrow { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.badge {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:10.5px;
+  letter-spacing:.06em; padding:2px 8px; border-radius:3px;
+  border:1px solid var(--teal); color:var(--teal); background:var(--teal-soft);
+}
+.badge.gray { border-color:var(--rule); color:var(--muted); background:var(--chip); }
+.step-no {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11px;
+  color:var(--muted); font-variant-numeric:tabular-nums;
+}
+h1 {
+  margin:0; font-family:"Gowun Batang", Georgia, serif;
+  font-size:30px; font-weight:700; line-height:1.36; text-wrap:balance;
+  letter-spacing:-.015em;
+}
+.lead { margin:0; font-size:17px; }
+.sec { display:flex; flex-direction:column; gap:9px; }
+.sec > h2 {
+  margin:0; font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--muted); font-weight:500;
+}
+
+.chain {
+  display:grid; grid-template-columns:1fr max-content;
+  border:1px solid var(--rule); border-radius:4px; overflow:hidden;
+  background:var(--card);
+}
+.chain > div { padding:6px 12px; border-top:1px solid var(--rule-soft); }
+.chain > div.top { border-top:0; }
+.chain .fn {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:13.5px;
+  white-space:pre; overflow-x:auto;
+}
+.chain .fn b { font-weight:500; color:var(--teal); }
+.chain .fn i { font-style:normal; color:var(--oxide); }
+.chain .at {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11.5px;
+  color:var(--muted); white-space:nowrap; border-left:1px solid var(--rule-soft);
+}
+
+ol.steps { margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:7px; }
+ol.steps li {
+  display:grid; grid-template-columns:21px 1fr; gap:10px; font-size:15px;
+}
+ol.steps li .n {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:12px;
+  color:var(--teal); padding-top:4px; font-variant-numeric:tabular-nums;
+}
+
+.note {
+  border-left:3px solid var(--teal); background:var(--teal-soft);
+  padding:11px 14px; border-radius:0 4px 4px 0; font-size:15px;
+}
+.note.warn { border-left-color:var(--oxide); background:var(--oxide-soft); }
+.note h3 { margin:0 0 4px; font-size:13.5px; font-weight:600; color:var(--teal); }
+.note.warn h3 { color:var(--oxide); }
+.note p { margin:0; }
+.note p + p { margin-top:7px; }
+
+.grid {
+  display:grid; border:1px solid var(--rule); border-radius:4px;
+  overflow:hidden; background:var(--card); font-size:14.5px;
+}
+.grid > div { padding:7px 11px; border-top:1px solid var(--rule-soft); }
+.grid > div.top { border-top:0; }
+.grid .bl { border-left:1px solid var(--rule-soft); }
+.grid .h {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11px;
+  letter-spacing:.05em; text-transform:uppercase; color:var(--muted);
+  background:var(--chip); white-space:nowrap;
+}
+.grid .c {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:13px;
+  white-space:nowrap; color:var(--teal); font-variant-numeric:tabular-nums;
+}
+code.k {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.88em;
+  background:var(--chip); padding:1px 6px; border-radius:3px;
+}
+.cap { font-size:13px; color:var(--muted); margin:0; }
+
+/* 좁아지면 위아래로 쌓고 페이지 전체가 세로로 스크롤되게 둔다 */
+@media (max-width:1060px) {
+  .split { display:block; overflow-y:auto; }
+  .figure {
+    border-right:0; border-bottom:1px solid var(--rule);
+    padding:18px 14px 22px; overflow:visible;
+  }
+  .notes { overflow:visible; padding:22px 18px 50px; }
+  .notes-in { max-width:none; }
+  .figure svg { max-width:660px; }
+}
+@media (max-width:700px) {
+  h1 { font-size:24px; }
+  .lead { font-size:15.5px; }
+  .note, ol.steps li { font-size:14px; }
+  .grid { font-size:13.5px; }
+  .mark { font-size:13px; }
+  .phase { display:none; }
+}
+@media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+</style>
+
+<div class="deck">
+  <div class="bar">
+    <div class="mark">질문 하나가 지나가는 길 <span>POST /api/ask</span></div>
+    <div class="spacer"></div>
+    <div class="phase" id="phase"></div>
+    <button class="nav-btn" id="prev" aria-label="이전 장">&#8249;</button>
+    <div class="count"><b id="at">1</b> / <span id="of">1</span></div>
+    <button class="nav-btn" id="next" aria-label="다음 장">&#8250;</button>
+  </div>
+  <div class="track"><i id="bar"></i></div>
+  <div class="split">
+    <div class="figure" id="figure"></div>
+    <div class="notes" id="notes"><div class="notes-in" id="notes-in"></div></div>
+  </div>
+</div>
+
+<script>
+/* ── 그림 조각 ─────────────────────────────────────────────── */
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function svg(vb, body) {
+  return '<svg viewBox="' + vb + '" role="img">' + body + '</svg>';
+}
+
+// 상자 하나. tone 은 on(청록) · off(회색) · warn(주황) 이다
+function bx(x, y, w, h, title, sub, tone) {
+  const t = tone || 'off';
+  const cx = x + w / 2;
+  let s = '<rect class="b-' + t + '" x="' + x + '" y="' + y + '" width="' + w +
+          '" height="' + h + '" rx="4"/>';
+  const tint = t === 'on' ? ' b-ont' : (t === 'warn' ? ' b-warnt' : '');
+  if (sub) {
+    s += '<text class="t1' + tint + '" x="' + cx + '" y="' + (y + h / 2 - 3) + '">' + title + '</text>';
+    s += '<text class="t2" x="' + cx + '" y="' + (y + h / 2 + 13) + '">' + sub + '</text>';
+  } else {
+    s += '<text class="t1' + tint + '" x="' + cx + '" y="' + (y + h / 2 + 5) + '">' + title + '</text>';
+  }
+  return s;
+}
+
+// 화살표 하나. 곧게 긋고 끝에 삼각형을 붙인다
+function ar(x1, y1, x2, y2, tone, label) {
+  const t = tone || '';
+  const cls = t ? 'ar-' + t : 'ar';
+  const hcls = t ? 'arh-' + t : 'arh';
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  const px = (ang) => (x2 - 10 * Math.cos(a + ang)) + ',' + (y2 - 10 * Math.sin(a + ang));
+  let s = '<line class="' + cls + '" x1="' + x1 + '" y1="' + y1 + '" x2="' +
+          (x2 - 6 * Math.cos(a)) + '" y2="' + (y2 - 6 * Math.sin(a)) + '"/>';
+  s += '<polygon class="' + hcls + '" points="' + x2 + ',' + y2 + ' ' + px(0.38) + ' ' + px(-0.38) + '"/>';
+  if (label) {
+    // 이름표를 선에 수직으로 밀어낸다. 안 그러면 비스듬한 화살표를 타고 앉는다
+    let nx = Math.sin(a), ny = -Math.cos(a);
+    if (ny > 0) { nx = -nx; ny = -ny; }
+    s += '<text class="t3" x="' + ((x1 + x2) / 2 + nx * 15) + '" y="' +
+         ((y1 + y2) / 2 + ny * 15 + 4) + '">' + label + '</text>';
+  }
+  return s;
+}
+
+/* ── 여섯 층 지도. 이 요청이 지금 어느 층에 있는지 켠다 ────── */
+const BANDS = [
+  { id: 'web', name: 'web/index.html', role: '화면 한 장' },
+  { id: 'api', name: 'app/api/', role: '문지기 · 흐름 · 응답' },
+  { id: 'feat', name: 'app/features/', role: '조립' },
+  { cols: [
+    { id: 'dom', name: 'app/domain/', role: '순수 계산' },
+    { id: 'repo', name: 'app/repositories/', role: 'SQL' },
+    { id: 'ada', name: 'app/adapters/', role: '벡터 · LLM' },
+  ] },
+  { id: 'core', name: 'app/core/', role: '설정 · DB · 임베딩기 · 관측' },
+  { id: 'out', name: 'SQLite · LLM 서버', role: '바깥' },
+];
+
+const BW = 560, BH = 44, BSTEP = 54;
+
+function rowOf(id) {
+  for (let i = 0; i < BANDS.length; i++) {
+    if (BANDS[i].id === id) return i;
+    if (BANDS[i].cols && BANDS[i].cols.some(function (c) { return c.id === id; })) return i;
+  }
+  return 0;
+}
+
+function stack(lit, hops) {
+  const on = new Set(lit || []);
+  let s = '';
+  BANDS.forEach(function (b, i) {
+    const y = i * BSTEP;
+    if (b.cols) {
+      const w = (BW - 20) / 3;
+      b.cols.forEach(function (c, j) {
+        const x = j * (w + 10);
+        const t = on.has(c.id) ? 'on' : 'off';
+        s += '<rect class="b-' + t + '" x="' + x + '" y="' + y + '" width="' + w +
+             '" height="' + BH + '" rx="4"/>';
+        s += '<text class="t1' + (t === 'on' ? ' b-ont' : '') + '" x="' + (x + w / 2) +
+             '" y="' + (y + 19) + '">' + c.name + '</text>';
+        s += '<text class="t2" x="' + (x + w / 2) + '" y="' + (y + 34) + '">' + c.role + '</text>';
+      });
+    } else {
+      const t = on.has(b.id) ? 'on' : 'off';
+      s += '<rect class="b-' + t + '" x="0" y="' + y + '" width="' + BW +
+           '" height="' + BH + '" rx="4"/>';
+      s += '<text class="t1 lft' + (t === 'on' ? ' b-ont' : '') + '" x="16" y="' +
+           (y + 27) + '">' + b.name + '</text>';
+      s += '<text class="t2 rgt" x="' + (BW - 16) + '" y="' + (y + 27) + '">' + b.role + '</text>';
+    }
+  });
+  (hops || []).forEach(function (h) {
+    const y1 = rowOf(h[0]) * BSTEP + BH / 2;
+    const y2 = rowOf(h[1]) * BSTEP + BH / 2;
+    s += '<path class="ar-on" d="M ' + (BW + 8) + ' ' + y1 + ' H 586 V ' + y2 + ' H ' + (BW + 16) + '"/>';
+    s += '<polygon class="arh-on" points="' + (BW + 5) + ',' + y2 + ' ' +
+         (BW + 16) + ',' + (y2 - 4.5) + ' ' + (BW + 16) + ',' + (y2 + 4.5) + '"/>';
+    if (h[2]) {
+      s += '<text class="t3 lft" x="596" y="' + ((y1 + y2) / 2) + '" transform="rotate(90 596 ' +
+           ((y1 + y2) / 2) + ')">' + h[2] + '</text>';
+    }
+  });
+  return svg('0 0 610 314', s);
+}
+
+/* ── 슬라이드 ─────────────────────────────────────────────── */
+const S = [
+
+{
+  phase: '들머리', layer: '전체', badge: 'gray',
+  title: '질문 하나가 여섯 층을 내려갔다 올라온다',
+  lead: '관리자가 화면에서 질문을 하나 던지면 그 요청은 서버 안에서 정해진 순서로 층을 타고 내려갔다가, 답이 되어 다시 올라옵니다. 이 자료는 그 길을 처음부터 끝까지 한 걸음씩 따라갑니다.',
+  fig: { d: stack([], []), cap: '위가 바깥, 아래가 저장소다. 요청은 위에서 들어와 아래까지 갔다가 답이 되어 올라온다.' },
+  steps: [
+    '<b>문 넷을 지난다.</b> 토큰 · 사용자 아이디 · 질문 모양 · 오늘 쓴 양.',
+    '<b>재료를 모은다.</b> 고객 판을 읽고, 질문 종류를 가르고, 벡터로 근거 자료를 찾는다.',
+    '<b>프롬프트를 조립해 모델에게 넘긴다.</b>',
+    '<b>답을 조각조각 흘려보내며</b> 뒤에서 사용량을 적는다.'
+  ],
+  note: { tone: 'teal', h: '층이 갈려 있는 이유',
+    p: ['아래층은 위층을 모릅니다. <code class="k">app/domain/</code> 은 DB 도 네트워크도 모르고, <code class="k">app/repositories/</code> 밖에는 SQL 이 한 줄도 없습니다. 그래서 저장소를 갈아 끼워도 위층이 안 바뀝니다.'] },
+  facts: { title: '실측 · docs/measurements.md · 2026-08-31',
+    cols: ['요청', 'DB 질의', '시간'], mono: [1, 2],
+    rows: [['첫 요청 (캐시 빔)', '16번', '0.163초'], ['두 번째 요청', '10번', '0.012초']] },
+  cap: 'LLM 호출은 뺀 값입니다. 임베딩기는 미리 올려 둔 상태에서 쟀습니다.'
+},
+
+{
+  phase: '① 도착', layer: 'web → app/api', title: '무엇이 담겨 오는가',
+  lead: '화면이 보내는 것은 헤더 둘과 본문 둘뿐입니다. 이 넷이 뒤에 나오는 모든 판단의 재료가 됩니다.',
+  fig: { d: svg('0 0 600 318',
+      bx(20, 8, 260, 40, 'POST /api/ask', null, 'on') +
+      '<text class="t2 lft" x="296" y="33">요청이 도착한다</text>' +
+      '<text class="t3 lft" x="20" y="72">헤더 · 앞단 서버가 붙인다</text>' +
+      bx(20, 80, 262, 46, 'Authorization', 'Bearer 서비스 토큰') +
+      bx(20, 132, 262, 46, 'X-User-Id', '누구를 대신해 부르나') +
+      ar(292, 103, 340, 103) + ar(292, 155, 340, 155) +
+      bx(348, 80, 232, 98, 'caller()', 'app/core/auth.py', 'on') +
+      '<text class="t3 lft" x="20" y="200">본문 JSON</text>' +
+      bx(20, 208, 262, 46, 'question', '2~500자') +
+      bx(20, 260, 262, 46, 'customerId', '없어도 된다') +
+      ar(292, 231, 340, 231) + ar(292, 283, 340, 283) +
+      bx(348, 208, 232, 98, 'AskRequest', 'app/features/schemas.py', 'on')),
+    cap: '헤더 둘은 auth 가, 본문 둘은 Pydantic 이 본다. 둘 다 통과해야 함수 안으로 들어온다.' },
+  chain: [
+    [0, '<b>ask</b>(request, user)', 'api/routers/ask.py'],
+    [1, 'Depends(<b>caller</b>)', 'core/auth.py'],
+    [1, 'AskRequest 검사', 'features/schemas.py']
+  ],
+  note: { tone: 'teal', h: '왜 사용자 아이디를 헤더로 받나',
+    p: ['이 서버는 로그인을 직접 다루지 않습니다. 앞단 서버가 누구인지 확인한 뒤 "이 사람을 대신해 부른다" 고 알려 주는 구조입니다. 쿼터와 비용 기록이 이 값을 열쇠로 씁니다.'] }
+},
+
+{
+  phase: '② 문 넷', layer: 'app/api', title: '함수 안으로 들어가기 전에 문이 넷 있다',
+  lead: '넷 중 하나라도 막히면 요청은 여기서 끝납니다. 아래 코드는 한 줄도 돌지 않고, DB 도 모델도 건드리지 않습니다.',
+  fig: { d: svg('0 0 600 300',
+      bx(14, 20, 118, 52, '토큰', '맞나') +
+      bx(154, 20, 118, 52, 'X-User-Id', '모양이 맞나') +
+      bx(294, 20, 118, 52, 'question', '2~500자인가') +
+      bx(434, 20, 152, 52, '오늘 쓴 양', '50번을 넘었나') +
+      ar(132, 46, 154, 46) + ar(272, 46, 294, 46) + ar(412, 46, 434, 46) +
+      ar(73, 72, 73, 122, 'warn') + ar(213, 72, 213, 122, 'warn') +
+      ar(353, 72, 353, 122, 'warn') + ar(510, 72, 510, 122, 'warn') +
+      bx(14, 126, 118, 40, '401', null, 'warn') +
+      bx(154, 126, 118, 40, '400', null, 'warn') +
+      bx(294, 126, 118, 40, '422', null, 'warn') +
+      bx(434, 126, 152, 40, '429', null, 'warn') +
+      '<text class="t3" x="300" y="192">넷을 다 지나야</text>' +
+      ar(300, 200, 300, 236, 'on') +
+      bx(160, 240, 280, 46, 'ask() 의 몸통이 돈다', null, 'on')),
+    cap: '왼쪽 셋은 요청이 잘못된 것이고, 오른쪽 하나는 요청은 맞지만 오늘 몫을 다 쓴 것이다.' },
+  facts: { title: '문마다 돌려주는 상태',
+    cols: ['문', '막히면', '무슨 뜻'], mono: [1],
+    rows: [
+      ['서비스 토큰', '401', '누구인지 안 밝혔다'],
+      ['X-User-Id', '400', '보낸 요청이 잘못됐다'],
+      ['질문 모양', '422', '값이 규칙과 안 맞는다'],
+      ['오늘 쓴 양', '429', '너무 많이 불렀다']
+    ] },
+  note: { tone: 'oxide', h: '순서가 중요하다',
+    p: ['쿼터를 세는 문이 맨 뒤입니다. 토큰도 안 맞는 요청 때문에 쿼터가 깎이면 안 되기 때문입니다.'] }
+},
+
+{
+  phase: '② 문 넷', layer: 'app/core', title: '문 ① · ② 토큰과 사용자 아이디',
+  lead: 'FastAPI 의 <code class="k">Depends(caller)</code> 가 함수보다 먼저 돕니다. 여기서 걸리면 <code class="k">ask()</code> 는 시작조차 하지 않습니다.',
+  fig: { d: stack(['api', 'core'], [['api', 'core', 'Depends']]),
+    cap: 'api 가 core 의 auth 를 부른다. 이 요청은 아직 features 아래로 안 내려갔다.' },
+  chain: [
+    [0, '<b>caller</b>(authorization, x_user_id)', 'core/auth.py'],
+    [1, '<b>_check_token</b>(authorization)', 'core/auth.py'],
+    [2, 'secrets.compare_digest(...)', '표준 라이브러리'],
+    [1, '<b>_check_user_id</b>(x_user_id)', 'core/auth.py']
+  ],
+  steps: [
+    '헤더가 <code class="k">Bearer 토큰값</code> 모양인지 본다. 아니면 401.',
+    '<code class="k">compare_digest</code> 로 토큰을 비교한다. 앞에서 몇 글자가 맞았는지가 걸린 시간으로 새어 나가지 않게 하는 함수다.',
+    '사용자 아이디가 비었는지, 64자를 넘는지, ASCII 이고 눈에 보이는 글자인지 본다.'
+  ],
+  note: { tone: 'oxide', h: '뜰 때 미리 막는 것도 있다',
+    p: ['운영 환경인데 토큰이 기본값 <code class="k">dev-token</code> 이면 서버가 아예 안 뜹니다. 그 값은 소스에 적혀 있어 인증이 없는 것과 같기 때문입니다. 토큰에 ASCII 아닌 글자가 있어도 마찬가지입니다. HTTP 헤더로 보낼 수 없어서입니다.'] }
+},
+
+{
+  phase: '② 문 넷', layer: 'app/features', title: '문 ③ 질문의 모양',
+  lead: '<code class="k">AskRequest</code> 는 값을 담는 그릇이면서 동시에 검사기입니다. 조건을 코드가 아니라 선언으로 적어 둡니다.',
+  fig: { d: svg('0 0 600 300',
+      bx(140, 14, 320, 40, 'class AskRequest(BaseModel)', null, 'on') +
+      ar(300, 54, 300, 76) +
+      bx(60, 80, 220, 56, 'question: str', 'min_length=2, max_length=500') +
+      bx(320, 80, 220, 56, 'customer_id: str | None', '없어도 된다') +
+      ar(170, 136, 170, 162) +
+      bx(60, 166, 220, 56, '@field_validator', 'not_blank()') +
+      '<text class="t2 lft" x="300" y="188">길이는 통과하지만</text>' +
+      '<text class="t2 lft" x="300" y="206">공백만 잔뜩인 질문을</text>' +
+      '<text class="t2 lft" x="300" y="224">여기서 막는다</text>' +
+      ar(170, 222, 170, 250, 'warn') +
+      bx(60, 254, 480, 40, '틀리면 422. ask() 안으로 안 들어온다', null, 'warn')),
+    cap: '조건을 선언으로 적어 두면 자동 문서에도 그대로 나온다.' },
+  chain: [
+    [0, 'AskRequest(question, customer_id)', 'features/schemas.py'],
+    [1, 'Field(min_length=2, max_length=500)', 'pydantic'],
+    [1, '<b>not_blank</b>(value)', 'features/schemas.py'],
+    [2, 'MAX_QUESTION_CHARS = 500', 'core/config.py']
+  ],
+  note: { tone: 'teal', h: '길이 검사와 빈칸 검사는 다르다',
+    p: ['공백 500자는 길이 검사를 통과합니다. 그래서 <code class="k">not_blank</code> 가 따로 붙어 있습니다. 통과한 값은 앞뒤 공백을 뗀 상태로 바뀌어 들어옵니다.'] }
+},
+
+{
+  phase: '② 문 넷', layer: 'app/api → repositories', title: '문 ④ 오늘 쓴 양을 세면서 한 칸을 잡는다',
+  lead: '세는 일과 잡는 일을 SQL 한 문장으로 묶습니다. 나눠서 하면 "세고 나서 넣기" 사이에 다른 요청이 끼어들 수 있습니다.',
+  fig: { d: svg('0 0 600 300',
+      bx(180, 10, 240, 40, 'guard(user, "ask")', null, 'on') +
+      ar(300, 50, 300, 74) +
+      bx(120, 78, 360, 76, 'INSERT INTO usage_log ... SELECT', 'WHERE (SELECT COUNT(*) ... ) &lt; 50', 'on') +
+      '<text class="t3" x="300" y="172">세는 일과 넣는 일이 한 문장 안에 있다</text>' +
+      ar(230, 182, 190, 200, 'on') + ar(370, 182, 410, 200, 'warn') +
+      bx(60, 204, 260, 52, '줄 번호를 받는다', '한 칸 잡았다', 'on') +
+      bx(340, 204, 200, 52, 'None', '오늘 몫을 다 썼다', 'warn') +
+      ar(190, 256, 190, 278, 'on') + ar(440, 256, 440, 278, 'warn') +
+      '<text class="t2" x="190" y="292">계속 간다</text>' +
+      '<text class="t2 b-warnt" x="440" y="292">429 로 끝</text>'),
+    cap: '한 문장 안에서 세고 넣기 때문에 두 요청이 동시에 와도 51번째가 안 들어간다.' },
+  chain: [
+    [0, '<b>guard</b>(user, "ask")', 'api/dependencies.py'],
+    [1, 'usage.<b>reserve</b>(user, feature)', 'core/usage.py'],
+    [2, '<b>reserve_log</b>(at, user_id, ...)', 'repositories/usage.py'],
+    [3, 'INSERT ... SELECT ... WHERE COUNT', 'SQLite'],
+    [1, 'trace.<b>set_context</b>(user, "ask", log_id)', 'core/trace.py']
+  ],
+  steps: [
+    '잡았으면 그 줄 번호(<code class="k">log_id</code>)가 돌아온다. 아직 값은 비어 있는 줄이다.',
+    '못 잡았으면 <code class="k">None</code> 이 오고 여기서 429 로 끝난다.',
+    '잡은 번호를 <code class="k">set_context</code> 로 이 요청의 맥락에 담아 둔다. 나중에 모델 호출이 끝나면 그 번호를 찾아 값을 채운다.'
+  ],
+  note: { tone: 'teal', h: '왜 미리 잡아 두나',
+    p: ['모델을 부르기 전에 자리를 먼저 잡습니다. 답을 다 만든 뒤에 "사실 한도를 넘었다" 고 하면 이미 돈이 든 뒤입니다. 하루 한도는 <code class="k">DAILY_QUOTA = 50</code> 이고 <code class="k">ask</code> 와 <code class="k">recommend</code> 만 셉니다.'] }
+},
+
+{
+  phase: '③ 재료', layer: 'app/features → repositories', title: '고객 판을 읽는다',
+  lead: '질문에 <code class="k">customerId</code> 가 붙어 있으면 그 고객이 누구인지, 무엇을 샀고 어떤 후기를 남겼는지를 먼저 읽습니다. 이 값이 프롬프트의 [고객] 칸이 됩니다.',
+  fig: { d: stack(['feat', 'repo', 'core', 'out'],
+      [['feat', 'repo', 'dashboard()'], ['repo', 'out', 'SELECT']]),
+    cap: 'features 가 repositories 에게 이름 붙은 질의를 시킨다. features 에는 SQL 이 한 줄도 없다.' },
+  chain: [
+    [0, 'retrieve.<b>dashboard</b>(customer_id)', 'features/profile.py'],
+    [1, 'customer_repo.<b>find_profile</b>(id)', 'repositories/customers.py'],
+    [1, 'purchase_repo.<b>find_by_customer</b>(id)', 'repositories/purchases.py'],
+    [1, '<b>mask_text</b>(review) — 구매 건마다', 'features/privacy.py'],
+    [1, '카테고리별 건수 · 평균 별점 · 총액', 'features/profile.py']
+  ],
+  steps: [
+    '고객이 없으면 <code class="k">None</code> 을 돌려주고 끝난다. 이 판정을 세 엔드포인트가 같이 쓴다.',
+    '구매 이력은 최근 것부터 온다. 채점용으로 숨겨 둔 구매(<code class="k">is_holdout = 1</code>)는 빠진다.',
+    '후기마다 개인정보를 가린 사본을 따로 붙인다. 원문은 그대로 두고 나가는 쪽만 가린 것을 쓴다.'
+  ],
+  facts: { title: '실측 · 이 단계가 던지는 질의',
+    cols: ['요청', '질의'], mono: [1],
+    rows: [['첫 요청', '4번'], ['두 번째 요청', '2번']] },
+  cap: '줄어든 2번은 마스킹 사전(이름 · 도시)입니다. 한 번 읽고 캐시에 둡니다.'
+},
+
+{
+  phase: '③ 재료', layer: 'app/features → domain', title: '나가는 글에서 개인정보를 지운다',
+  lead: '후기에는 이름과 전화번호와 카톡 아이디가 섞여 있습니다. 이 글이 프롬프트에 실려 밖으로 나가므로 그 전에 가립니다.',
+  fig: { d: svg('0 0 600 300',
+      bx(20, 14, 560, 52, '"김민수님 010-1234-5678 로 연락주세요. 서울 강남구 사는데 잘 맞아요"', null, 'warn') +
+      ar(300, 66, 300, 92) +
+      bx(20, 96, 130, 46, 'KAKAO', '문장째 지움') +
+      bx(160, 96, 130, 46, 'CONTACT', '문장째 지움') +
+      bx(300, 96, 130, 46, 'PHONE', '[연락처]') +
+      bx(440, 96, 140, 46, 'EMAIL', '[메일]') +
+      bx(90, 152, 200, 46, '주소 정규식', '[주소]') +
+      bx(310, 152, 200, 46, '이름 사전', '[이름]') +
+      ar(300, 198, 300, 224) +
+      bx(20, 228, 560, 46, '"[주소] 사는데 잘 맞아요"', null, 'on') +
+      '<text class="t3" x="300" y="292">되돌릴 수 없다. 그래서 원문은 DB 에 그대로 둔다</text>'),
+    cap: '실제로 돌려서 나온 결과다. CONTACT 가 "연락" 이 든 첫 문장을 통째로 지워 전화번호도 같이 사라졌고, 남은 문장의 "서울 강남구" 가 [주소] 가 됐다.' },
+  chain: [
+    [0, '<b>mask_text</b>(text)', 'features/privacy.py'],
+    [1, '<b>_load</b>() — 처음 한 번만', 'features/privacy.py'],
+    [2, 'customer_repo.<b>distinct_names</b>()', 'repositories/customers.py'],
+    [2, 'customer_repo.<b>distinct_cities</b>()', 'repositories/customers.py'],
+    [2, 'masking.<b>build_address_pattern</b>(cities)', 'domain/masking.py'],
+    [1, 'masking.<b>mask</b>(text, names, address)', 'domain/masking.py']
+  ],
+  note: { tone: 'oxide', h: '사전에 없는 이름은 그대로 나간다',
+    p: ['이름은 정규식이 아니라 고객 표에서 읽어 온 사전으로 지웁니다. 그래서 사전에 없는 이름은 안 가려집니다. 실제로 돌려 보면 "김민수 언니도 좋대요" 의 이름이 그대로 남습니다.',
+        '<code class="k">domain/masking.mask</code> 를 사전 없이 부르면 이름과 주소가 통째로 안 가려집니다. 그래서 앱은 <code class="k">privacy.mask_text</code> 하나만 부르게 하고, 그 파일은 <code class="k">__all__</code> 로 그것만 내보냅니다.'] },
+  facts: { title: '실측 · docs/measurements.md',
+    cols: ['항목', '값'], mono: [1],
+    rows: [['하이픈만 잡는 전화번호 정규식', '152건 중 42건'], ['이름 사전으로 못 잡고 남는 것', '최소 31건']] }
+},
+
+{
+  phase: '④ 갈림길', layer: 'app/features', title: '상품 질문인가 고객 분석인가',
+  lead: '질문 글자에 정해 둔 낱말 열넷 중 하나라도 들어 있으면 상품 문서를 찾는 길로, 아니면 고객 분석 길로 갑니다. 모델에게 묻지 않고 코드가 가릅니다.',
+  fig: { d: svg('0 0 600 300',
+      bx(190, 10, 220, 44, 'answering.route(question)', null, 'on') +
+      bx(60, 74, 480, 52, '성분 · 사용법 · 주의 · 배송 · 교환 · 반품 · 용량 · 보관',
+         '부작용 · 임산부 · 유통기한 · 환불 · 몇 번 · 언제 바르') +
+      '<text class="t3" x="300" y="146">이 중 하나라도 들어 있나</text>' +
+      ar(230, 158, 150, 194, 'on', '있다') + ar(370, 158, 450, 194, 'on', '없다') +
+      bx(30, 198, 240, 88, '"product"', 'search_chunks(question, k=3)', 'on') +
+      bx(330, 198, 240, 88, '"customer"', 'candidates() → search_chunks()', 'on')),
+    cap: '가른 결과는 응답의 첫 줄로 화면에 그대로 나간다.' },
+  chain: [
+    [0, 'answering.<b>route</b>(question)', 'features/answering.py'],
+    [1, 'PRODUCT_WORDS 14개와 대조', 'features/answering.py']
+  ],
+  note: { tone: 'teal', h: '왜 모델에게 안 묻나',
+    p: ['가르는 일에 모델을 한 번 더 부르면 돈과 시간이 두 배가 됩니다. 낱말 검사는 즉시 끝나고, 틀렸을 때 무엇 때문에 틀렸는지도 눈으로 보입니다.'] },
+  cap: '낱말 목록은 features/answering.py 의 PRODUCT_WORDS 에 있습니다. 세어 보면 열넷입니다.'
+},
+
+{
+  phase: '⑤ 근거 찾기', layer: 'app/features → adapters', title: '상품 길 · 뜻이 가까운 문서 조각을 찾는다',
+  lead: '질문을 벡터로 바꿔서, 저장된 문서 조각 벡터와 가까운 것을 고릅니다. 낱말이 안 겹쳐도 뜻이 통하면 찾아옵니다.',
+  fig: { d: stack(['feat', 'ada', 'core', 'out'],
+      [['feat', 'core', '질문 → 벡터'], ['feat', 'ada', 'search']]),
+    cap: 'features 가 core 의 임베딩기로 질문을 벡터로 바꾸고, adapters 의 저장소에게 가까운 것을 묻는다.' },
+  chain: [
+    [0, 'retrieve.<b>search_chunks</b>(question, k=3)', 'features/searching.py'],
+    [1, 'get_embeddings().<b>embed_query</b>(question)', 'core/embedder.py'],
+    [2, '_Metered → usage.record(...)', 'core/embedder.py'],
+    [1, 'store.<b>search</b>("chunk", v, 3, only_ids)', 'adapters/stores/sqlite_store.py'],
+    [1, 'store.<b>fetch_payloads</b>("chunk", ids, 4컬럼)', 'adapters/stores/sqlite_store.py']
+  ],
+  steps: [
+    '질문 한 줄을 숫자 목록으로 바꾼다. 이 한 번이 이 요청에서 가장 느린 축에 든다.',
+    '저장된 조각 벡터와 가까운 것 세 개를 고른다.',
+    '조각 옆에 베껴 둔 값을 <b>한 번에</b> 읽는다. 조각마다 따로 묻지 않는다.'
+  ],
+  note: { tone: 'teal', h: '작은 것으로 찾고 큰 것을 돌려준다',
+    p: ['찾는 단위는 잘게 자른 조각이지만, 답의 근거로 넘기는 것은 그 조각이 속한 <b>섹션 원문 전체</b>(<code class="k">section_text</code>)입니다. 작은 조각은 정확히 맞히기 좋고, 큰 섹션은 모델이 앞뒤 맥락을 보기 좋습니다.'] }
+},
+
+{
+  phase: '⑤ 근거 찾기', layer: 'app/adapters', title: '벡터 검색 안쪽에서 벌어지는 일',
+  lead: '"가깝다" 는 것은 숫자 목록 둘을 곱해서 더한 값이 크다는 뜻입니다. 반복문 없이 행렬 곱셈 한 번으로 후보 전체의 점수가 한꺼번에 나옵니다.',
+  fig: { d: svg('0 0 600 300',
+      bx(20, 16, 150, 44, '질문 벡터', '숫자 384개', 'on') +
+      '<text class="t1" x="196" y="44">@</text>' +
+      bx(222, 16, 160, 44, '저장된 행렬', '조각 × 384') +
+      '<text class="t1" x="406" y="44">=</text>' +
+      bx(430, 16, 150, 44, '점수 목록', '조각마다 하나', 'on') +
+      '<text class="t3" x="300" y="86">한 줄로 전체가 계산된다. 파이썬 반복문이 없다</text>' +
+      ar(505, 60, 505, 104, 'on') +
+      bx(390, 108, 190, 44, 'argsort(-scores)', '큰 점수부터') +
+      ar(485, 152, 485, 190, 'on') +
+      bx(390, 194, 190, 44, '[:k]', '앞의 k 개만', 'on') +
+      '<rect class="b-off" x="20" y="104" width="340" height="140" rx="4"/>' +
+      '<text class="t1 lft" x="38" y="128">_get(kind)</text>' +
+      '<text class="t2 lft" x="38" y="152">처음 한 번만 DB 를 통째로 읽는다</text>' +
+      '<text class="t2 lft" x="38" y="174">아이디를 글자로 통일하고 정렬한다</text>' +
+      '<text class="t2 lft" x="38" y="196">아이디 → 줄 번호 색인을 만든다</text>' +
+      '<text class="t2 lft" x="38" y="222">그 뒤로는 메모리에서 꺼낸다</text>' +
+      ar(210, 244, 300, 264, 'on') +
+      bx(180, 268, 240, 30, '[("12", 0.89), ("7", 0.87), ...]', null, 'on')),
+    cap: 'kind = chunk · product · customer · review 네 종류가 각각 이 구조를 갖는다.' },
+  facts: { title: '실측 · docs/measurements.md',
+    cols: ['항목', '값'], mono: [1],
+    rows: [['벡터 2,060개를 메모리에 올리기', '25ms'], ['유사도 계산', '9ms']] },
+  note: { tone: 'teal', h: '내적이 곧 코사인 유사도인 이유',
+    p: ['벡터가 만들어질 때 이미 길이가 1 로 맞춰져 있습니다. <code class="k">core/embedder.py</code> 가 <code class="k">normalize_embeddings=True</code> 로 만들고, <code class="k">pipeline/prep/checks.py</code> 가 "전부 길이 1 로 정규화돼 있다" 를 검사합니다. 그래서 나눗셈 없이 곱셈 한 번으로 끝납니다.'] }
+},
+
+{
+  phase: '⑤ 근거 찾기', layer: 'app/features', title: '고객 길 · 후보를 다섯 번 좁힌다',
+  lead: '고객 분석 질문이면 먼저 이 고객에게 권할 만한 상품을 추립니다. 벡터 검색은 <b>맨 마지막</b>입니다. 그 전까지는 전부 SQL 과 집합 연산입니다.',
+  fig: { d: svg('0 0 600 300',
+      bx(60, 8, 480, 34, '벡터가 있는 상품 전부', null) +
+      '<text class="t1 rgt b-ont" x="580" y="30">200</text>' +
+      ar(300, 42, 300, 56, 'on') +
+      bx(110, 60, 380, 34, '이력에 있는 카테고리만 남긴다', null) +
+      '<text class="t1 rgt b-ont" x="580" y="82">19</text>' +
+      ar(300, 94, 300, 108, 'on') +
+      bx(140, 112, 320, 34, '이미 산 상품을 뺀다', null) +
+      '<text class="t1 rgt b-ont" x="580" y="134">18</text>' +
+      ar(300, 146, 300, 160, 'on') +
+      bx(160, 164, 280, 34, '피부 타입에 위험한 것을 뺀다', null, 'warn') +
+      '<text class="t1 rgt b-ont" x="580" y="186">18</text>' +
+      ar(300, 198, 300, 212, 'on') +
+      bx(180, 216, 240, 34, '벡터로 가까운 20개', null, 'on') +
+      '<text class="t1 rgt b-ont" x="580" y="238">18</text>' +
+      '<text class="t3" x="300" y="272">고객 C001(건성) 로 실제 돌려서 센 값이다</text>' +
+      '<text class="t3" x="300" y="290">민감성 고객이면 네 번째에서 39개가 빠진다</text>'),
+    cap: '값이 비싼 순서의 반대로 건다. 싼 필터로 먼저 줄이고 벡터 계산은 마지막에 한 번.' },
+  chain: [
+    [0, 'retrieve.<b>candidates</b>(customer_id)', 'features/searching.py'],
+    [1, 'store.<b>hashes</b>("product")', 'adapters/stores'],
+    [1, 'purchase_repo.<b>history_category_product_ids</b>()', 'repositories/purchases.py'],
+    [1, 'purchase_repo.<b>bought_product_ids</b>()', 'repositories/purchases.py'],
+    [1, 'safety_filter.<b>blocked_for</b>(skin_type)', 'features/safety_filter.py'],
+    [2, 'safety.<b>blocked_for</b>(skin_type, bans)', 'domain/safety.py'],
+    [1, 'store.<b>get_vector</b>("customer", id)', 'adapters/stores'],
+    [1, 'store.<b>search</b>("product", me, 20, only_ids)', 'adapters/stores'],
+    [1, 'product_repo.<b>find_cards</b>(ids)', 'repositories/products.py']
+  ],
+  note: { tone: 'oxide', h: '막은 것도 같이 돌려준다',
+    p: ['안전 필터에 걸린 상품은 그냥 사라지지 않고 <code class="k">blocked</code> 목록에 근거 문장과 함께 담겨 나갑니다. 근거 없이 사라지면 사람이 왜 없는지 알 수 없고 고칠 수도 없습니다.'] },
+  facts: { title: '실측 · docs/measurements.md',
+    cols: ['필터', 'hit@5', '정답 생존율'], mono: [1, 2],
+    rows: [['이력 카테고리', '13.0%', '58.0%'], ['없음', '11.0%', '100%']] },
+  cap: '필터를 걸면 정답의 42%가 후보에서 미리 사라집니다. 그래도 hit@5 는 더 높습니다.'
+},
+
+{
+  phase: '⑤ 근거 찾기', layer: 'app/features', title: '고객 길 · 후보 안에서만 자료를 찾는다',
+  lead: '추린 후보 다섯 개에 딸린 문서 조각으로 검색 범위를 좁힙니다. 후보와 상관없는 상품의 문서가 근거로 섞이지 않게 하는 자리입니다.',
+  fig: { d: svg('0 0 600 300',
+      bx(30, 14, 240, 44, '후보 상위 5개', 'picked[:5]', 'on') +
+      ar(270, 36, 320, 36) +
+      bx(320, 14, 250, 44, 'chunk_ids_for_products()', 'product_id 색인을 쓴다') +
+      ar(445, 58, 445, 92, 'on') +
+      bx(320, 96, 250, 44, '조각 아이디 목록', 'only_ids', 'on') +
+      bx(30, 96, 240, 44, '질문 벡터', 'embed_query(question)', 'on') +
+      ar(270, 118, 320, 118) +
+      ar(300, 140, 300, 176, 'on') +
+      bx(150, 180, 300, 48, 'store.search("chunk", v, 3, only_ids)', null, 'on') +
+      ar(300, 228, 300, 258, 'on') +
+      bx(120, 262, 360, 34, '자료 3건 — 상품 이름 · 섹션 · 원문', null, 'on') +
+      '<text class="t3 lft" x="30" y="252">조각이 하나도 없으면 자료 없이 답한다</text>'),
+    cap: 'recreate() 가 product_id 컬럼에 만들어 둔 색인이 여기서 쓰인다.' },
+  chain: [
+    [0, 'retrieve.<b>search_chunks</b>(q, 3, product_ids_only)', 'features/searching.py'],
+    [1, 'store.<b>chunk_ids_for_products</b>(ids)', 'adapters/stores'],
+    [2, 'SELECT chunk_id ... WHERE product_id IN (...)', 'SQLite'],
+    [1, 'store.<b>search</b>("chunk", v, 3, only_ids=...)', 'adapters/stores'],
+    [1, 'store.<b>fetch_payloads</b>(...)', 'adapters/stores']
+  ],
+  note: { tone: 'teal', h: '두 길이 같은 함수에서 만난다',
+    p: ['상품 길과 고객 길이 결국 같은 <code class="k">search_chunks</code> 를 부릅니다. 다른 것은 <code class="k">product_ids_only</code> 를 주느냐뿐입니다. 안 주면 전체 조각에서, 주면 그 상품들 안에서 찾습니다.'] }
+},
+
+{
+  phase: '⑥ 조립', layer: 'app/domain', title: '프롬프트를 칸 넷으로 조립한다',
+  lead: '모은 재료를 대괄호로 이름 붙인 칸에 나눠 담습니다. 들어온 것만 붙이므로 고객을 안 지정한 질문에는 [고객] 칸 자체가 없습니다.',
+  fig: { d: svg('0 0 600 300',
+      bx(20, 10, 560, 40, 'build_context(sources, board, blocked, cands)', null, 'on') +
+      ar(300, 50, 300, 68) +
+      bx(20, 72, 270, 50, '[고객]', '나이 · 피부 · 구매 8건까지 (가린 후기)') +
+      bx(310, 72, 270, 50, '[추천 가능한 상품]', '번호가 붙은 후보 목록') +
+      bx(20, 130, 270, 50, '[자료]', '(1) 상품 &gt; 섹션 + 원문') +
+      bx(310, 130, 270, 50, '[주의]', '권하면 안 되는 상품과 근거', 'warn') +
+      ar(300, 180, 300, 202) +
+      bx(20, 206, 560, 44, 'system: 자료 안에 있는 내용만 근거로 답한다. 없으면 없다고 말한다', null, 'on') +
+      ar(300, 250, 300, 268) +
+      bx(140, 272, 320, 26, 'ANSWER_PROMPT | chat_answer | StrOutputParser', null, 'on')),
+    cap: '세로 막대는 앞의 결과를 뒤로 넘긴다. 틀 → 모델 → 글자 꺼내기 순으로 이어진다.' },
+  chain: [
+    [0, 'answering.<b>stream</b>(question, sources, board, ...)', 'features/answering.py'],
+    [1, 'prompting.<b>build_context</b>(...)', 'domain/prompting.py'],
+    [2, 'prompting.<b>customer_block</b>(board)', 'domain/prompting.py'],
+    [2, 'prompting.<b>candidate_block</b>(cands)', 'domain/prompting.py'],
+    [1, 'ANSWER_CHAIN.<b>stream</b>({context, question})', 'langchain'],
+    [2, 'chat_answer — temperature 0.3', 'adapters/llm.py']
+  ],
+  note: { tone: 'teal', h: 'domain 은 DB 도 모델도 모른다',
+    p: ['<code class="k">domain/prompting.py</code> 는 딕셔너리를 받아 글자를 돌려주는 순수 함수뿐입니다. 그래서 DB 없이 테스트할 수 있고, 프롬프트가 어떻게 생겼는지 눈으로 확인할 수 있습니다.'] },
+  cap: '구매 이력은 MAX_HISTORY = 8 건까지만 넣습니다. 더 넣으면 모델이 앞을 잊습니다.'
+},
+
+{
+  phase: '⑦ 응답', layer: 'app/api', title: '답을 한 줄씩 흘려보낸다',
+  lead: '답을 다 만든 뒤에 한꺼번에 주지 않습니다. 한 줄에 JSON 하나씩(NDJSON) 만들어지는 대로 내보냅니다. 화면은 첫 글자부터 바로 보여 줄 수 있습니다.',
+  fig: { d: svg('0 0 600 300',
+      '<line class="ar" x1="40" y1="20" x2="40" y2="278"/>' +
+      '<text class="t3 lft" x="16" y="292">시간</text>' +
+      bx(70, 14, 320, 34, '{"type":"route", "kind":"customer"}', null, 'on') +
+      '<text class="t2 lft" x="404" y="35">어느 길로 갔나</text>' +
+      bx(70, 58, 320, 34, '{"type":"sources", "sources":[...]}', null, 'on') +
+      '<text class="t2 lft" x="404" y="79">근거 자료. 본문보다 먼저</text>' +
+      bx(70, 102, 320, 30, '{"type":"delta", "text":"이 "}', null) +
+      bx(70, 136, 320, 30, '{"type":"delta", "text":"제품"}', null) +
+      bx(70, 170, 320, 30, '{"type":"delta", "text":"은 "}', null) +
+      '<text class="t2 lft" x="404" y="157">글자 조각. 수십~수백 줄</text>' +
+      '<text class="t1 lft" x="70" y="222">⋮</text>' +
+      bx(70, 236, 320, 34, '{"type":"done"}', null, 'on') +
+      '<text class="t2 lft" x="404" y="257">여기서 끝. 화면이 마무리한다</text>' +
+      '<text class="t3 lft" x="70" y="290">중간에 터지면 {"type":"error"} 한 줄이 끼어든다</text>'),
+    cap: 'media_type 은 application/x-ndjson. 한 줄에 JSON 하나라는 뜻이다.' },
+  chain: [
+    [0, 'StreamingResponse(<b>generate</b>(), "x-ndjson")', 'api/routers/ask.py'],
+    [1, 'yield route 줄', 'api/routers/ask.py'],
+    [1, 'yield sources 줄', 'api/routers/ask.py'],
+    [1, 'for piece in answering.<b>stream</b>(...)', 'features/answering.py'],
+    [2, 'yield delta 줄 — 조각마다', 'api/routers/ask.py'],
+    [1, 'usage.<b>settle</b>(log_id, ...)', 'core/usage.py'],
+    [1, 'yield done 줄', 'api/routers/ask.py']
+  ],
+  note: { tone: 'oxide', h: '이미 나가기 시작한 응답은 상태 코드를 못 바꾼다',
+    p: ['첫 줄이 나간 순간 HTTP 상태는 200 으로 정해집니다. 그래서 중간에 모델이 터져도 500 을 줄 수 없고, 대신 <code class="k">{"type":"error"}</code> 줄을 흘려보냅니다. 진짜 이유는 서버 기록에만 남습니다.'] }
+},
+
+{
+  phase: '⑦ 응답', layer: 'app/core', title: '모델이 답하는 동안 뒤에서 셋이 돈다',
+  lead: '답을 만드는 일과 그 답이 얼마짜리였는지 적는 일은 서로 모릅니다. LangChain 콜백 셋이 호출의 시작과 끝에 끼어들어 기록만 남깁니다.',
+  fig: { d: svg('0 0 600 300',
+      bx(170, 12, 260, 42, 'chat_answer 호출', 'adapters/llm.py', 'on') +
+      ar(300, 54, 300, 78, 'on') +
+      bx(170, 82, 260, 34, 'on_llm_end', null) +
+      ar(230, 116, 110, 150) + ar(300, 116, 300, 150) + ar(370, 116, 490, 150) +
+      bx(20, 154, 180, 74, 'UsageWriter', 'usage_log 줄을 채운다') +
+      bx(215, 154, 170, 74, 'JsonlTracer', 'runs.jsonl 한 줄') +
+      bx(400, 154, 180, 74, 'UsageCollector', 'meter 딕셔너리에 담는다') +
+      '<text class="t2" x="110" y="248">writer</text>' +
+      '<text class="t2" x="300" y="248">tracer</text>' +
+      '<text class="t2" x="490" y="248">config 로 이번만</text>' +
+      '<text class="t3" x="300" y="278">앞의 둘은 클라이언트를 만들 때 붙였고, 셋째는 이 호출에만 붙인다</text>'),
+    cap: 'CURRENT 는 요청마다 따로 있는 상자다. 동시에 여러 요청이 와도 기록이 안 섞인다.' },
+  chain: [
+    [0, 'chat_answer(callbacks=[writer, tracer])', 'adapters/llm.py'],
+    [1, 'writer.<b>on_llm_end</b>(response)', 'core/trace.py'],
+    [2, 'trace.CURRENT.get() → log_id', 'core/trace.py'],
+    [2, 'usage.<b>settle</b>(log_id, ...)', 'core/usage.py'],
+    [1, 'tracer.<b>on_llm_end</b>(response)', 'core/trace.py'],
+    [2, 'runs.jsonl 에 한 줄 덧붙이기', '파일'],
+    [1, 'UsageCollector.<b>on_llm_end</b>(response)', 'core/trace.py'],
+    [2, 'meter["in"] · ["out"] · ["seconds"]', '딕셔너리']
+  ],
+  note: { tone: 'teal', h: '기록이 실패해도 답은 나간다',
+    p: ['사용량을 적는 코드는 전부 <code class="k">try</code> 로 감싸여 있습니다. 기록 때문에 답이 안 나가는 일이 없게 하려는 것입니다. 기록 파일이 10MB 를 넘으면 한 세대 밀어 두고 새로 씁니다.'] }
+},
+
+{
+  phase: '⑧ 마무리', layer: 'app/api → repositories', title: '잡아 둔 칸에 실제로 든 것을 적는다',
+  lead: '맨 앞에서 비워 둔 채로 잡아 둔 그 줄을, 이제 실제 값으로 채웁니다. 그리고 마지막 줄을 내보내면 요청이 끝납니다.',
+  fig: { d: svg('0 0 600 300',
+      bx(40, 12, 520, 44, 'usage_log 의 그 줄 (문 ④ 에서 잡아 둔 log_id)', null) +
+      '<text class="t2 lft" x="56" y="80">model</text><text class="t2 lft" x="56" y="102">in_tokens</text>' +
+      '<text class="t2 lft" x="56" y="124">out_tokens</text><text class="t2 lft" x="56" y="146">seconds</text>' +
+      '<text class="t2 lft" x="56" y="168">cost_usd</text>' +
+      '<text class="t1 lft" x="170" y="80">비어 있었다</text>' +
+      ar(300, 96, 350, 96, 'on') +
+      bx(360, 66, 200, 118, 'meter 에 담긴 값', 'UsageCollector 가 채웠다', 'on') +
+      ar(460, 184, 460, 210, 'on') +
+      bx(340, 214, 240, 40, 'UPDATE usage_log SET ...', null, 'on') +
+      ar(300, 234, 260, 234) +
+      bx(20, 214, 230, 40, 'cost_of(model, in, out)', null) +
+      '<text class="t3" x="300" y="284">백만 토큰당 단가로 계산한다. 토큰 수를 모르면 0 이다</text>'),
+    cap: '이 줄이 나중에 "누가 무엇을 얼마나 썼나" 를 답하는 재료가 된다.' },
+  chain: [
+    [0, 'usage.<b>settle</b>(log_id, model, in, out, seconds)', 'core/usage.py'],
+    [1, 'usage.<b>cost_of</b>(model, in_tokens, out_tokens)', 'core/usage.py'],
+    [1, '<b>settle_log</b>(log_id, ...)', 'repositories/usage.py'],
+    [2, 'UPDATE usage_log SET ... WHERE id = ?', 'SQLite'],
+    [0, 'yield {"type":"done"}', 'api/routers/ask.py']
+  ],
+  note: { tone: 'oxide', h: '같은 줄을 두 곳이 채운다',
+    p: ['콜백 <code class="k">UsageWriter</code> 가 먼저 그 줄을 채우고, 스트림이 끝난 뒤 <code class="k">ask.py</code> 가 <code class="k">meter</code> 값으로 다시 채웁니다. 같은 줄에 두 번 쓰는 것이라 마지막 값이 남습니다.'] },
+  cap: '단가표는 core/usage.py 의 PRICING 에 있고, 확인한 날짜가 PRICING_AS_OF 에 적혀 있습니다.'
+},
+
+{
+  phase: '되짚기', layer: '전체', badge: 'gray', title: '처음부터 끝까지 한 장으로',
+  lead: '지금까지 본 것을 순서대로 놓으면 이렇습니다. 왼쪽이 층, 오른쪽이 그 층에서 도는 함수입니다.',
+  fig: { d: svg('0 0 600 300',
+      '<line class="ar" x1="118" y1="8" x2="118" y2="292"/>' +
+      '<text class="t2 rgt" x="106" y="26">app/api</text>' +
+      '<text class="t2 rgt" x="106" y="60">app/core</text>' +
+      '<text class="t2 rgt" x="106" y="94">app/features</text>' +
+      '<text class="t2 rgt" x="106" y="128">repositories</text>' +
+      '<text class="t2 rgt" x="106" y="162">app/adapters</text>' +
+      '<text class="t2 rgt" x="106" y="196">app/domain</text>' +
+      '<text class="t2 rgt" x="106" y="230">LLM</text>' +
+      '<text class="t2 rgt" x="106" y="264">app/api</text>' +
+      bx(130, 10, 190, 26, 'ask() 시작', null, 'on') +
+      bx(130, 44, 190, 26, 'caller() · guard()', null, 'on') +
+      bx(130, 78, 250, 26, 'dashboard() · route()', null, 'on') +
+      bx(130, 112, 250, 26, 'find_profile · find_by_customer', null) +
+      bx(130, 146, 250, 26, 'search() · fetch_payloads()', null, 'on') +
+      bx(130, 180, 250, 26, 'mask() · build_context()', null) +
+      bx(130, 214, 250, 26, 'chat_answer 스트리밍', null, 'on') +
+      bx(130, 248, 250, 26, 'settle() · done', null, 'on') +
+      ar(255, 36, 255, 42) + ar(255, 70, 255, 76) + ar(255, 104, 255, 110) +
+      ar(255, 138, 255, 144) + ar(255, 172, 255, 178) + ar(255, 206, 255, 212) +
+      ar(255, 240, 255, 246) +
+      '<text class="t3 lft" x="400" y="27">문 넷</text>' +
+      '<text class="t3 lft" x="400" y="95">재료 모으기</text>' +
+      '<text class="t3 lft" x="400" y="163">근거 찾기</text>' +
+      '<text class="t3 lft" x="400" y="231">답 만들기</text>' +
+      '<text class="t3 lft" x="400" y="265">정산과 마무리</text>'),
+    cap: '층을 오르내리지만 방향은 늘 아래로만 부른다. 아래층이 위층을 부르는 일은 없다.' },
+  steps: [
+    '<b>문 넷</b> — 토큰 · 사용자 · 질문 모양 · 오늘 쓴 양. 하나라도 막히면 여기서 끝.',
+    '<b>재료</b> — 고객 판을 읽고 후기를 가리고, 질문 종류를 가른다.',
+    '<b>근거</b> — 질문을 벡터로 바꾸고 가까운 자료를 찾는다.',
+    '<b>답</b> — 칸 넷으로 프롬프트를 조립해 모델에게 넘기고 조각째 흘려보낸다.',
+    '<b>정산</b> — 잡아 둔 줄을 채우고 done 한 줄로 끝낸다.'
+  ]
+},
+
+{
+  phase: '되짚기', layer: '전체', badge: 'gray', title: '숫자로 보는 요청 하나',
+  lead: '전부 이 저장소에서 실제로 돌려서 나온 값입니다. 지어낸 숫자는 없습니다.',
+  fig: { d: svg('0 0 600 300',
+      '<text class="t2 lft" x="20" y="26">DB 질의</text>' +
+      bx(120, 8, 300, 30, '첫 요청 16번', null, 'warn') +
+      bx(120, 44, 188, 30, '두 번째 요청 10번', null, 'on') +
+      '<text class="t3 lft" x="320" y="64">13.6배 빠르다</text>' +
+      '<text class="t2 lft" x="20" y="112">후보 좁히기</text>' +
+      bx(120, 94, 400, 30, '200개', null) +
+      bx(120, 130, 38, 30, '19', null) +
+      bx(166, 130, 36, 30, '18', null, 'on') +
+      '<text class="t3 lft" x="214" y="150">이력 카테고리 → 산 것 빼기 → 안전 필터</text>' +
+      '<text class="t2 lft" x="20" y="196">걸린 시간</text>' +
+      bx(120, 178, 300, 30, '첫 요청 0.163초', null, 'warn') +
+      bx(120, 214, 22, 30, '', null, 'on') +
+      '<text class="t3 lft" x="152" y="234">두 번째 0.012초 (LLM 제외)</text>' +
+      '<text class="t3 lft" x="20" y="278">막대 길이는 값에 비례한다. 모델 호출 시간은 여기 안 들어 있다</text>'),
+    cap: '2026-08-31, 고객 C001 기준. docs/measurements.md 에 조건과 함께 적어 두었다.' },
+  facts: { title: '한 요청이 부르는 것',
+    cols: ['무엇', '몇 번'], mono: [1],
+    rows: [
+      ['DB 질의 (첫 요청 / 두 번째)', '16 / 10'],
+      ['임베딩 호출', '1'],
+      ['LLM 호출', '1'],
+      ['usage_log 를 채우는 UPDATE', '2'],
+      ['runs.jsonl 에 적는 줄', '1']
+    ] },
+  note: { tone: 'oxide', h: '같은 질의가 두 번 도는 자리가 있다',
+    p: ['<code class="k">find_profile</code> 이 한 요청 안에서 두 번 돕니다. <code class="k">dashboard()</code> 와 <code class="k">candidates()</code> 가 각각 따로 부르기 때문입니다. 지금 규모에서는 안 보이지만, 저장소가 네트워크 너머로 가면 이 횟수가 그대로 왕복이 됩니다.'] },
+  cap: '다음에 볼 것: 이 길에서 가지를 치는 /api/customers/{id}/recommend 는 같은 후보를 쓰되 모델에게 번호를 고르게 합니다.'
+}
+
+];
+
+/* ── 그리기 ───────────────────────────────────────────────── */
+function gridHtml(t) {
+  const n = t.cols.length;
+  const mono = t.mono || [];
+  let h = '';
+  if (t.title) h += '<h2>' + esc(t.title) + '</h2>';
+  h += '<div class="grid" style="grid-template-columns:' +
+       (n === 2 ? '1fr max-content' : '1fr max-content max-content') + '">';
+  t.cols.forEach(function (c, i) {
+    h += '<div class="h top' + (i ? ' bl' : '') + '">' + esc(c) + '</div>';
+  });
+  t.rows.forEach(function (r) {
+    r.forEach(function (v, i) {
+      h += '<div class="' + (mono.indexOf(i) >= 0 ? 'c ' : '') + (i ? 'bl' : '') + '">' +
+           esc(v) + '</div>';
+    });
+  });
+  return h + '</div>';
+}
+
+function chainHtml(rows) {
+  let h = '<div class="chain">';
+  rows.forEach(function (r, i) {
+    const pad = r[0] ? '  '.repeat(r[0] - 1) + '└ ' : '';
+    h += '<div class="fn' + (i ? '' : ' top') + '">' + pad + r[1] + '</div>';
+    h += '<div class="at' + (i ? '' : ' top') + '">' + esc(r[2] || '') + '</div>';
+  });
+  return h + '</div>';
+}
+
+let cur = 0;
+
+function show(i) {
+  cur = Math.max(0, Math.min(S.length - 1, i));
+  const s = S[cur];
+
+  const fig = document.getElementById('figure');
+  fig.innerHTML = s.fig.d + (s.fig.cap ? '<p class="figcap">' + s.fig.cap + '</p>' : '');
+
+  const out = [];
+  out.push('<div class="eyebrow"><span class="badge' + (s.badge === 'gray' ? ' gray' : '') +
+    '">' + esc(s.layer) + '</span><span class="step-no">' + (cur + 1) + ' / ' + S.length +
+    '</span></div>');
+  out.push('<h1>' + esc(s.title) + '</h1>');
+  out.push('<p class="lead">' + s.lead + '</p>');
+  if (s.chain) out.push('<div class="sec"><h2>부르는 차례</h2>' + chainHtml(s.chain) + '</div>');
+  if (s.steps) {
+    let li = '';
+    s.steps.forEach(function (t, n) {
+      li += '<li><span class="n">' + (n + 1) + '</span><span>' + t + '</span></li>';
+    });
+    out.push('<div class="sec"><h2>일어나는 일</h2><ol class="steps">' + li + '</ol></div>');
+  }
+  if (s.note) {
+    out.push('<div class="note' + (s.note.tone === 'oxide' ? ' warn' : '') + '"><h3>' +
+      esc(s.note.h) + '</h3>' +
+      s.note.p.map(function (p) { return '<p>' + p + '</p>'; }).join('') + '</div>');
+  }
+  if (s.facts) out.push('<div class="sec">' + gridHtml(s.facts) + '</div>');
+  if (s.cap) out.push('<p class="cap">' + s.cap + '</p>');
+  document.getElementById('notes-in').innerHTML = out.join('');
+
+  document.getElementById('phase').textContent = s.phase;
+  document.getElementById('at').textContent = cur + 1;
+  document.getElementById('bar').style.width = ((cur + 1) / S.length * 100) + '%';
+  document.getElementById('prev').disabled = cur === 0;
+  document.getElementById('next').disabled = cur === S.length - 1;
+  document.getElementById('notes').scrollTop = 0;
+  fig.scrollTop = 0;
+
+  try { localStorage.setItem('deck-askflow', String(cur)); } catch (e) {}
+}
+
+document.getElementById('of').textContent = S.length;
+document.getElementById('prev').addEventListener('click', function () { show(cur - 1); });
+document.getElementById('next').addEventListener('click', function () { show(cur + 1); });
+document.addEventListener('keydown', function (e) {
+  if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') { show(cur + 1); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { show(cur - 1); e.preventDefault(); }
+  else if (e.key === 'Home') { show(0); e.preventDefault(); }
+  else if (e.key === 'End') { show(S.length - 1); e.preventDefault(); }
+});
+
+let start = 0;
+try { start = Math.min(parseInt(localStorage.getItem('deck-askflow') || '0', 10) || 0, S.length - 1); } catch (e) {}
+show(start);
+</script>

@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - run: pip install -e ".[dev]"
+
+      - run: python -m ruff check .
+
+      - name: 경계가 지켜지나
+        run: |
+          ! grep -rn "from app.adapters.stores.sqlite_store import" --include=*.py \
+              app/features app/api app/repositories app/core app/domain pipeline eval
+          ! grep -rnE "SELECT|INSERT|UPDATE |DELETE FROM|PRAGMA" --include=*.py \
+              app/features app/api
+          ! grep -rn "_vectors" --include=*.py app/features
+
+      - run: python -m pipeline schema
+      - run: python -m pipeline chunk
+
+      - run: python -m pytest
+
+      - name: wheel 이 실제로 import 되나
+        run: |
+          pip wheel . --no-deps -w dist
+          pip install --no-deps --target /tmp/wheelcheck dist/*.whl
+          cd /tmp && PYTHONPATH=/tmp/wheelcheck python -c "import app.main"

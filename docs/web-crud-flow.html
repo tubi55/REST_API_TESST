@@ -1,0 +1,789 @@
+<title>화면이 서버와 말하는 법</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --paper:#F1F3F4; --card:#FBFCFC; --ink:#17212B; --muted:#5A6672;
+  --rule:#D3D9DD; --rule-soft:#E4E9EB; --chip:#E7ECEE; --grid:#E9EDEF;
+  --oxide:#B4501E; --oxide-soft:#F7E9E0;
+  --teal:#16697A; --teal-soft:#DFEDEF;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:#131A20; --card:#1B242C; --ink:#E4E9EC; --muted:#93A1AC;
+    --rule:#2C3842; --rule-soft:#232E37; --chip:#232E37; --grid:#1E2831;
+    --oxide:#E08A55; --oxide-soft:#3A2418;
+    --teal:#63B0C0; --teal-soft:#16303A;
+  }
+}
+:root[data-theme="dark"] {
+  --paper:#131A20; --card:#1B242C; --ink:#E4E9EC; --muted:#93A1AC;
+  --rule:#2C3842; --rule-soft:#232E37; --chip:#232E37; --grid:#1E2831;
+  --oxide:#E08A55; --oxide-soft:#3A2418;
+  --teal:#63B0C0; --teal-soft:#16303A;
+}
+
+* { box-sizing:border-box; }
+html, body { height:100%; }
+body {
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans KR", system-ui, -apple-system, sans-serif;
+  line-height:1.72; -webkit-font-smoothing:antialiased;
+}
+:focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
+
+.deck { height:100%; display:flex; flex-direction:column; }
+
+.bar {
+  flex:0 0 auto; display:flex; align-items:center; gap:18px;
+  padding:0 20px; height:50px;
+  background:var(--card); border-bottom:1px solid var(--rule);
+}
+.mark {
+  font-family:"Gowun Batang", Georgia, serif; font-weight:700; font-size:17px;
+  white-space:nowrap; letter-spacing:-.015em;
+}
+.mark span { color:var(--teal); }
+.bar .spacer { flex:1; }
+.phase {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11px;
+  letter-spacing:.05em; text-transform:uppercase; color:var(--muted);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.count {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:13px;
+  color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.count b { color:var(--ink); font-weight:500; }
+.nav-btn {
+  width:34px; height:28px; border:1px solid var(--rule); border-radius:4px;
+  background:transparent; color:var(--ink); cursor:pointer;
+  font-size:14.5px; line-height:1; display:grid; place-items:center;
+}
+.nav-btn:hover { background:var(--chip); }
+.nav-btn:disabled { opacity:.32; cursor:default; }
+.track { flex:0 0 auto; height:2px; background:var(--rule-soft); }
+.track i { display:block; height:100%; background:var(--teal); transition:width .2s ease; }
+
+.split { flex:1; min-height:0; display:grid; grid-template-columns:60% 40%; }
+
+.figure {
+  min-width:0; overflow:auto; padding:26px 24px 32px;
+  display:flex; flex-direction:column; align-items:center;
+  /* safe center 라야 그림이 칸보다 클 때 위쪽이 안 잘린다 */
+  justify-content:center; justify-content:safe center;
+  gap:14px; border-right:1px solid var(--rule);
+  background-image:linear-gradient(var(--grid) 1px, transparent 1px),
+                   linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:28px 28px;
+}
+.figure svg { width:100%; max-width:750px; height:auto; display:block; flex:0 0 auto; }
+.figcap {
+  font-size:13.5px; color:var(--muted); text-align:center; max-width:700px;
+  background:var(--paper); padding:2px 10px; border-radius:3px; flex:0 0 auto;
+}
+
+/* 그림 안의 공통 조각 */
+.b-off  { fill:var(--card); stroke:var(--rule); stroke-width:1; }
+.b-on   { fill:var(--teal-soft); stroke:var(--teal); stroke-width:1.6; }
+.b-warn { fill:var(--oxide-soft); stroke:var(--oxide); stroke-width:1.6; }
+.b-ghost{ fill:none; stroke:var(--rule); stroke-width:1; stroke-dasharray:3 3; }
+.t1 { font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:12.5px;
+      fill:var(--ink); text-anchor:middle; }
+.t2 { font-family:"IBM Plex Sans KR", sans-serif; font-size:11px;
+      fill:var(--muted); text-anchor:middle; }
+.t3 { font-family:"IBM Plex Sans KR", sans-serif; font-size:11px;
+      fill:var(--muted); text-anchor:middle; }
+.b-ont { fill:var(--teal); }
+.b-warnt { fill:var(--oxide); }
+.lft { text-anchor:start; }
+.rgt { text-anchor:end; }
+.ar { stroke:var(--muted); stroke-width:1.4; fill:none; }
+.ar-on { stroke:var(--teal); stroke-width:2; fill:none; }
+.ar-warn { stroke:var(--oxide); stroke-width:1.8; fill:none; }
+.arh { fill:var(--muted); }
+.arh-on { fill:var(--teal); }
+.arh-warn { fill:var(--oxide); }
+
+.notes { min-width:0; overflow-y:auto; padding:28px 28px 58px; }
+.notes-in { max-width:660px; display:flex; flex-direction:column; gap:21px; }
+.eyebrow { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.badge {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:10.5px;
+  letter-spacing:.06em; padding:2px 8px; border-radius:3px;
+  border:1px solid var(--teal); color:var(--teal); background:var(--teal-soft);
+}
+.badge.gray { border-color:var(--rule); color:var(--muted); background:var(--chip); }
+.step-no {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11px;
+  color:var(--muted); font-variant-numeric:tabular-nums;
+}
+h1 {
+  margin:0; font-family:"Gowun Batang", Georgia, serif;
+  font-size:30px; font-weight:700; line-height:1.36; text-wrap:balance;
+  letter-spacing:-.015em;
+}
+.lead { margin:0; font-size:17px; }
+.sec { display:flex; flex-direction:column; gap:9px; }
+.sec > h2 {
+  margin:0; font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--muted); font-weight:500;
+}
+
+.chain {
+  display:grid; grid-template-columns:1fr max-content;
+  border:1px solid var(--rule); border-radius:4px; overflow:hidden;
+  background:var(--card);
+}
+.chain > div { padding:6px 12px; border-top:1px solid var(--rule-soft); }
+.chain > div.top { border-top:0; }
+.chain .fn {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:13.5px;
+  white-space:pre; overflow-x:auto;
+}
+.chain .fn b { font-weight:500; color:var(--teal); }
+.chain .fn i { font-style:normal; color:var(--oxide); }
+.chain .at {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11.5px;
+  color:var(--muted); white-space:nowrap; border-left:1px solid var(--rule-soft);
+}
+
+ol.steps { margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:7px; }
+ol.steps li {
+  display:grid; grid-template-columns:21px 1fr; gap:10px; font-size:15px;
+}
+ol.steps li .n {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:12px;
+  color:var(--teal); padding-top:4px; font-variant-numeric:tabular-nums;
+}
+
+.note {
+  border-left:3px solid var(--teal); background:var(--teal-soft);
+  padding:11px 14px; border-radius:0 4px 4px 0; font-size:15px;
+}
+.note.warn { border-left-color:var(--oxide); background:var(--oxide-soft); }
+.note h3 { margin:0 0 4px; font-size:13.5px; font-weight:600; color:var(--teal); }
+.note.warn h3 { color:var(--oxide); }
+.note p { margin:0; }
+.note p + p { margin-top:7px; }
+
+.grid {
+  display:grid; border:1px solid var(--rule); border-radius:4px;
+  overflow:hidden; background:var(--card); font-size:14.5px;
+}
+.grid > div { padding:7px 11px; border-top:1px solid var(--rule-soft); }
+.grid > div.top { border-top:0; }
+.grid .bl { border-left:1px solid var(--rule-soft); }
+.grid .h {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11px;
+  letter-spacing:.05em; text-transform:uppercase; color:var(--muted);
+  background:var(--chip); white-space:nowrap;
+}
+.grid .c {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:13px;
+  white-space:nowrap; color:var(--teal); font-variant-numeric:tabular-nums;
+}
+code.k {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.88em;
+  background:var(--chip); padding:1px 6px; border-radius:3px;
+}
+.cap { font-size:13px; color:var(--muted); margin:0; }
+
+/* 좁아지면 위아래로 쌓고 페이지 전체가 세로로 스크롤되게 둔다 */
+@media (max-width:1060px) {
+  .split { display:block; overflow-y:auto; }
+  .figure {
+    border-right:0; border-bottom:1px solid var(--rule);
+    padding:18px 14px 22px; overflow:visible;
+  }
+  .notes { overflow:visible; padding:22px 18px 50px; }
+  .notes-in { max-width:none; }
+  .figure svg { max-width:660px; }
+}
+@media (max-width:700px) {
+  h1 { font-size:24px; }
+  .lead { font-size:15.5px; }
+  .note, ol.steps li { font-size:14px; }
+  .grid { font-size:13.5px; }
+  .mark { font-size:13px; }
+  .phase { display:none; }
+}
+@media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+
+.code {
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:13px;
+  background:var(--card); border:1px solid var(--rule); border-radius:4px;
+  padding:10px 13px; white-space:pre; overflow-x:auto; line-height:1.66;
+}
+.code b { font-weight:500; color:var(--teal); }
+.code i { font-style:normal; color:var(--oxide); }
+.code s { text-decoration:none; color:var(--muted); }
+.where { font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:12px; color:var(--muted); }
+</style>
+
+<div class="deck">
+  <div class="bar">
+    <div class="mark">화면이 서버와 말하는 법 <span>web/index.html</span></div>
+    <div class="spacer"></div>
+    <div class="phase" id="phase"></div>
+    <button class="nav-btn" id="prev" aria-label="이전 장">&#8249;</button>
+    <div class="count"><b id="at">1</b> / <span id="of">1</span></div>
+    <button class="nav-btn" id="next" aria-label="다음 장">&#8250;</button>
+  </div>
+  <div class="track"><i id="bar"></i></div>
+  <div class="split">
+    <div class="figure" id="figure"></div>
+    <div class="notes" id="notes"><div class="notes-in" id="notes-in"></div></div>
+  </div>
+</div>
+
+<script>
+/* ── 그림 조각. 앞 슬라이드와 같은 것을 쓴다 ───────────────── */
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function svg(vb, body) { return '<svg viewBox="' + vb + '" role="img">' + body + '</svg>'; }
+
+function bx(x, y, w, h, title, sub, tone) {
+  const t = tone || 'off';
+  const cx = x + w / 2;
+  let s = '<rect class="b-' + t + '" x="' + x + '" y="' + y + '" width="' + w +
+          '" height="' + h + '" rx="4"/>';
+  const tint = t === 'on' ? ' b-ont' : (t === 'warn' ? ' b-warnt' : '');
+  if (sub) {
+    s += '<text class="t1' + tint + '" x="' + cx + '" y="' + (y + h / 2 - 3) + '">' + title + '</text>';
+    s += '<text class="t2" x="' + cx + '" y="' + (y + h / 2 + 13) + '">' + sub + '</text>';
+  } else {
+    s += '<text class="t1' + tint + '" x="' + cx + '" y="' + (y + h / 2 + 5) + '">' + title + '</text>';
+  }
+  return s;
+}
+
+function ar(x1, y1, x2, y2, tone, label) {
+  const t = tone || '';
+  const cls = t ? 'ar-' + t : 'ar';
+  const hcls = t ? 'arh-' + t : 'arh';
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  const px = (ang) => (x2 - 10 * Math.cos(a + ang)) + ',' + (y2 - 10 * Math.sin(a + ang));
+  let s = '<line class="' + cls + '" x1="' + x1 + '" y1="' + y1 + '" x2="' +
+          (x2 - 6 * Math.cos(a)) + '" y2="' + (y2 - 6 * Math.sin(a)) + '"/>';
+  s += '<polygon class="' + hcls + '" points="' + x2 + ',' + y2 + ' ' + px(0.38) + ' ' + px(-0.38) + '"/>';
+  if (label) {
+    let nx = Math.sin(a), ny = -Math.cos(a);
+    if (ny > 0) { nx = -nx; ny = -ny; }
+    s += '<text class="t3" x="' + ((x1 + x2) / 2 + nx * 15) + '" y="' +
+         ((y1 + y2) / 2 + ny * 15 + 4) + '">' + label + '</text>';
+  }
+  return s;
+}
+
+/* ── 되풀이되는 그림. 화면에서 서버까지 한 줄 ──────────────── */
+function wire(lit, method, path) {
+  const on = new Set(lit || []);
+  const t = (id) => (on.has(id) ? 'on' : 'off');
+  let s = '<line class="b-ghost" x1="450" y1="14" x2="450" y2="178"/>';
+  s += '<text class="t3" x="232" y="26">브라우저</text>';
+  s += '<text class="t3" x="527" y="26">서버</text>';
+  s += bx(15, 40, 120, 54, 'DOM', '화면의 요소', t('dom'));
+  s += bx(165, 40, 120, 54, 'JS 함수', '값을 모은다', t('fn'));
+  s += bx(315, 40, 120, 54, 'fetch()', method || '메서드', t('net'));
+  s += bx(465, 40, 120, 54, 'FastAPI', path || '/api/...', t('api'));
+  s += ar(135, 67, 165, 67) + ar(285, 67, 315, 67) + ar(435, 67, 465, 67);
+  s += '<path class="ar-on" d="M 525 94 V 150 H 75 V 102"/>';
+  s += '<polygon class="arh-on" points="75,94 70,105 80,105"/>';
+  s += '<text class="t3" x="300" y="170">응답을 받아 화면을 다시 그린다</text>';
+  return svg('0 0 600 186', s);
+}
+
+/* ── 슬라이드 ─────────────────────────────────────────────── */
+const S = [
+
+{
+  phase: '들머리', layer: 'web/', badge: 'gray',
+  title: '한 파일 안에 셋이 들어 있다',
+  where: 'web/index.html · 1,373줄',
+  lead: '화면은 파일 하나입니다. 그 안에 디자인(CSS)과 뼈대(HTML)와 움직임(JS)이 같이 들어 있습니다. 이 자료는 <b>디자인을 통째로 빼고</b>, 화면이 서버와 주고받는 부분만 봅니다.',
+  fig: { d: svg('0 0 600 222',
+      '<text class="t2" x="300" y="26">web/index.html — 1,373줄이 한 파일에 있다</text>' +
+      '<rect class="b-ghost" x="20" y="42" width="240" height="62" rx="4"/>' +
+      '<text class="t1" x="140" y="70">CSS  680줄</text>' +
+      '<text class="t2" x="140" y="86">디자인</text>' +
+      bx(276, 42, 128, 62, 'HTML  43줄', '화면의 뼈대') +
+      bx(420, 42, 160, 62, 'JS  641줄', '서버와 말한다', 'on') +
+      '<text class="t3" x="140" y="124">이 자료에서는 안 본다</text>' +
+      '<text class="t3 b-ont" x="500" y="124">여기만 본다</text>' +
+      bx(20, 148, 175, 54, 'GET', '받아서 그린다') +
+      bx(212, 148, 175, 54, 'POST', '보내고 받는다') +
+      bx(404, 148, 176, 54, 'PATCH · DELETE', '고치고 지운다')),
+    cap: '줄 수는 지금 세어서 적은 값이다. CSS 가 이 파일의 절반이다.' },
+  steps: [
+    'HTML 은 <b>어디에</b> 무엇이 있는지만 정한다.',
+    'JS 는 그 자리를 찾아 값을 꺼내고, 서버에 보내고, 받은 것으로 화면을 다시 그린다.',
+    '이 자료는 그 <b>꺼내고 · 보내고 · 받는</b> 세 가지만 본다.'
+  ],
+  note: { tone: 'teal', h: '왜 CSS 를 빼도 되나',
+    p: ['CSS 는 색과 크기만 정합니다. 지워도 화면은 못생겨질 뿐 <b>기능은 그대로 돕니다</b>. 서버와 주고받는 일과는 아무 상관이 없습니다.'] }
+},
+
+{
+  phase: '가르기', layer: 'web/', title: '파일을 둘로 가르면',
+  where: 'index.html + app.js',
+  lead: '지금은 한 파일이지만, 보통은 뼈대와 움직임을 따로 둡니다. HTML 은 자리만 잡고, JS 는 파일 하나로 빠집니다.',
+  fig: { d: svg('0 0 600 196',
+      bx(20, 44, 200, 96, 'index.html', '1,373줄 · 전부 한 곳') +
+      ar(232, 92, 288, 92, 'on', '가르면') +
+      bx(300, 30, 280, 54, 'index.html', 'HTML 뼈대 + script 한 줄', 'on') +
+      bx(300, 100, 280, 54, 'app.js', 'JS 641줄', 'on') +
+      '<text class="t3" x="440" y="176">브라우저가 두 파일을 따로 받는다</text>'),
+    cap: 'script 태그를 body 가 끝나기 직전에 두면 요소가 다 만들어진 뒤에 JS 가 돈다.' },
+  code: [
+    '&lt;body&gt;',
+    '  &lt;input <b>id="psearch"</b>&gt;',
+    '  &lt;div <b>id="prows"</b>&gt;&lt;/div&gt;',
+    '',
+    '  <i>&lt;script src="app.js"&gt;&lt;/script&gt;</i>',
+    '&lt;/body&gt;'
+  ],
+  steps: [
+    'HTML 에는 <b>id 와 class 만</b> 남긴다. JS 가 그 이름으로 찾는다.',
+    'JS 는 <code class="k">app.js</code> 한 파일로 뺀다.',
+    'script 를 맨 아래 두는 이유는 위의 요소가 다 만들어진 뒤에 JS 가 그것을 찾을 수 있게 하기 위해서다.'
+  ],
+  note: { tone: 'teal', h: '가르면 좋은 점',
+    p: ['브라우저가 <code class="k">app.js</code> 를 따로 받아 캐시에 둡니다. HTML 만 바뀌면 JS 는 다시 안 받습니다. 그리고 파일이 짧아져 고칠 자리를 찾기 쉬워집니다.'] }
+},
+
+{
+  phase: '한눈에', layer: 'web/', title: '화면이 쓰는 요청은 네 가지뿐이다',
+  where: 'fetch 를 쓰는 자리 전부',
+  lead: '무엇을 하느냐에 따라 <b>메서드</b>가 갈립니다. 주소는 같아도 메서드가 다르면 서버가 다른 일을 합니다.',
+  fig: { d: svg('0 0 600 206',
+      bx(20, 16, 116, 36, 'GET', null, 'on') +
+      '<text class="t1 lft" x="152" y="39">/api/customers</text>' +
+      '<text class="t2 lft" x="360" y="39">받아서 그린다</text>' +
+      bx(20, 60, 116, 36, 'POST', null, 'on') +
+      '<text class="t1 lft" x="152" y="83">/api/products</text>' +
+      '<text class="t2 lft" x="360" y="83">만들고 받는다</text>' +
+      bx(20, 104, 116, 36, 'PATCH', null, 'on') +
+      '<text class="t1 lft" x="152" y="127">/api/products/P007</text>' +
+      '<text class="t2 lft" x="400" y="127">고치고 받는다</text>' +
+      bx(20, 148, 116, 36, 'DELETE', null, 'on') +
+      '<text class="t1 lft" x="152" y="171">/api/products/P007</text>' +
+      '<text class="t2 lft" x="400" y="171">지운다</text>'),
+    cap: '주소가 같은 마지막 둘은 메서드만으로 갈린다.' },
+  facts: { title: '보내는 것과 받는 것',
+    cols: ['메서드', '보낼 몸통', '받는 것'], mono: [0],
+    rows: [
+      ['GET', '없다', '자료'],
+      ['POST', 'JSON', '만들어진 것'],
+      ['PATCH', 'JSON (준 칸만)', '고쳐진 것'],
+      ['DELETE', '없다', '없다 (204)']
+    ] },
+  note: { tone: 'teal', h: '몸통이 없는 둘',
+    p: ['GET 과 DELETE 는 보낼 내용이 없습니다. 무엇을 지울지는 <b>주소</b>에 들어 있습니다. 그래서 <code class="k">Content-Type</code> 도 안 붙입니다.'] }
+},
+
+{
+  phase: '공통', layer: 'web/', title: '모든 요청이 지나는 함수 하나',
+  where: 'index.html 736~743줄',
+  lead: '주소와 토큰을 붙이는 자리를 한 군데로 모아 뒀습니다. 요청을 보내는 코드가 열 곳이어도 토큰을 고칠 자리는 여기 하나입니다.',
+  fig: { d: wire(['fn', 'net']),
+    cap: 'JS 함수와 fetch 사이에 이 두 함수가 끼어 있다.' },
+  code: [
+    '<s>// 모든 요청이 이 함수를 지난다</s>',
+    'const <b>authHeaders</b> = (extra = {}) =&gt; ({',
+    '  Authorization: `Bearer ${TOKEN}`,',
+    '  "X-User-Id": USER_ID, ...extra });',
+    '',
+    'const <b>api</b> = async (path, options = {}) =&gt; {',
+    '  const res = await <b>fetch</b>(API_BASE + path,',
+    '    { ...options, headers: authHeaders(options.headers) });',
+    '  if (!res.ok) <i>throw new Error(await res.text())</i>;',
+    '  return res.<b>json</b>();',
+    '};'
+  ],
+  steps: [
+    '<code class="k">authHeaders()</code> 가 토큰과 사용자 아이디를 붙인다. 서버의 문 두 개를 여기서 통과한다.',
+    '<code class="k">api()</code> 는 <b>받기만 하는 요청</b>에 쓴다. 실패하면 그 자리에서 던진다.',
+    '<code class="k">res.json()</code> 이 받은 글자를 자바스크립트 객체로 바꾼다.'
+  ],
+  note: { tone: 'oxide', h: 'api() 를 안 쓰는 자리가 셋 있다',
+    p: ['POST · PATCH · DELETE 는 <code class="k">fetch</code> 를 직접 부릅니다. 실패했을 때 <b>본문을 읽어 칸마다 오류를 붙여야</b> 하는데, <code class="k">api()</code> 는 실패하면 바로 던져서 그럴 틈이 없기 때문입니다.'] }
+},
+
+{
+  phase: 'GET', layer: 'web/', title: 'GET · 받기만 한다',
+  where: 'index.html 1355~1370줄',
+  lead: '화면이 처음 뜰 때 필요한 것을 순서대로 받아옵니다. 보낼 몸통이 없고, 받은 것으로 화면을 그리기만 합니다.',
+  fig: { d: wire(['net', 'api'], 'GET', '/api/config'),
+    cap: '보낼 것이 없으니 DOM 에서 값을 꺼내는 단계가 없다.' },
+  code: [
+    '<s>// 화면이 뜰 때 한 번 돈다</s>',
+    '(async () =&gt; {',
+    '  const config = await <b>api</b>("/api/config");',
+    '  <b>document.getElementById</b>("env").textContent =',
+    '    `${config.backend} · ${config.llm}`;',
+    '',
+    '  customers = await <b>api</b>("/api/customers");',
+    '  drawList();',
+    '})();'
+  ],
+  steps: [
+    '<code class="k">await</code> 는 답이 올 때까지 다음 줄로 안 넘어간다는 뜻이다.',
+    '받은 객체에서 필요한 값을 꺼내 <code class="k">textContent</code> 로 화면에 넣는다.',
+    '목록은 변수에 담아 두고 <code class="k">drawList()</code> 가 그린다. 검색할 때마다 서버에 다시 묻지 않는다.'
+  ],
+  note: { tone: 'teal', h: '조건은 주소 뒤에 붙인다',
+    p: ['<code class="k">/api/products?keyword=세럼&amp;size=100</code> 처럼 물음표 뒤에 붙입니다. 값에 한글이나 공백이 있을 수 있어 <code class="k">encodeURIComponent()</code> 로 감싸서 넣습니다.'] }
+},
+
+{
+  phase: 'DOM', layer: 'web/', title: 'HTML 안의 요소를 잡는 법',
+  where: 'index.html 곳곳',
+  lead: 'JS 는 HTML 에 적어 둔 <b>id</b> 와 <b>class</b> 로 요소를 찾습니다. 하나를 잡을 때와 여러 개를 잡을 때 쓰는 함수가 다릅니다.',
+  fig: { d: svg('0 0 600 214',
+      '<text class="t3" x="300" y="22">HTML 에 붙여 둔 이름</text>' +
+      bx(20, 34, 252, 46, 'id="psearch"', '검색 칸 하나') +
+      bx(20, 92, 252, 46, 'id="pform"', '폼 하나') +
+      bx(20, 150, 252, 46, 'class="row"', '목록 줄 여러 개') +
+      ar(282, 57, 332, 57) + ar(282, 115, 332, 115) + ar(282, 173, 332, 173) +
+      bx(342, 34, 238, 46, 'getElementById', '하나를 준다', 'on') +
+      bx(342, 92, 238, 46, 'getElementById', '하나를 준다', 'on') +
+      bx(342, 150, 238, 46, 'querySelectorAll', '여러 개를 준다', 'on')),
+    cap: 'id 는 화면에 하나뿐이고, class 는 여럿일 수 있다.' },
+  code: [
+    '<s>// 하나를 잡는다</s>',
+    'const box = <b>document.getElementById</b>("pmsg");',
+    'box.<b>textContent</b> = "저장했다";',
+    '',
+    '<s>// 여러 개를 잡아 하나씩 돈다</s>',
+    '<b>document.querySelectorAll</b>("#prows .row")',
+    '  .forEach((row) =&gt; {',
+    '    row.<i>onclick</i> = () =&gt; openProduct(row.dataset.id);',
+    '  });'
+  ],
+  steps: [
+    '<code class="k">getElementById("pmsg")</code> 는 id 가 그것인 요소 <b>하나</b>를 준다. 없으면 <code class="k">null</code> 이다.',
+    '<code class="k">querySelectorAll(".row")</code> 는 조건에 맞는 <b>전부</b>를 준다. 하나도 없으면 빈 목록이다.',
+    '<code class="k">forEach</code> 로 하나씩 돌며 <code class="k">onclick</code> 을 붙인다. 어느 줄을 눌렀는지는 <code class="k">data-id</code> 로 안다.'
+  ],
+  note: { tone: 'teal', h: '값을 넣을 때 쓰는 셋',
+    p: ['<code class="k">textContent</code> 는 글자만 넣습니다. <code class="k">innerHTML</code> 은 태그까지 해석합니다. 입력 칸의 값은 <code class="k">value</code> 로 읽고 씁니다.',
+        '사용자가 쓴 글을 <code class="k">innerHTML</code> 로 넣으면 태그가 그대로 살아납니다. 그래서 이 화면은 <code class="k">esc()</code> 로 꺾쇠를 먼저 바꿉니다.'] }
+},
+
+{
+  phase: 'DOM', layer: 'web/', title: '폼에 적힌 값을 객체 하나로',
+  where: 'index.html 1284~1286줄',
+  lead: '칸이 열 개여도 한 줄로 모을 수 있습니다. 칸마다 <code class="k">getElementById</code> 를 부르지 않습니다.',
+  fig: { d: svg('0 0 600 224',
+      bx(20, 26, 150, 34, 'name', '세럼') +
+      bx(20, 68, 150, 34, 'brand', '이니스프리') +
+      bx(20, 110, 150, 34, 'price', '19000') +
+      '<text class="t3" x="95" y="164">form 안의 input · select</text>' +
+      ar(180, 86, 218, 86, 'on') +
+      bx(226, 58, 152, 56, 'new FormData(form)', 'name 속성이 열쇠', 'on') +
+      ar(386, 86, 424, 86, 'on') +
+      bx(430, 58, 150, 56, 'Object.fromEntries', '평범한 객체로', 'on') +
+      '<text class="t1" x="300" y="192">{ name: "세럼", brand: "이니스프리", price: "19000" }</text>' +
+      '<text class="t3 b-warnt" x="300" y="214">숫자 칸도 글자로 온다</text>'),
+    cap: 'FormData 는 폼 안에서 name 속성이 붙은 칸만 모은다.' },
+  code: [
+    'const form = document.getElementById("pform");',
+    'const body = <b>Object.fromEntries</b>(<b>new FormData</b>(form));',
+    'body.price = <i>Number</i>(body.price);'
+  ],
+  steps: [
+    '<code class="k">new FormData(form)</code> 가 폼 안의 칸을 <b>이름과 값</b> 짝으로 모은다.',
+    '<code class="k">Object.fromEntries</code> 가 그 짝들을 평범한 객체로 바꾼다. 이대로 JSON 이 된다.',
+    '폼에서 온 값은 <b>전부 글자</b>다. 숫자여야 하는 <code class="k">price</code> 만 <code class="k">Number()</code> 로 바꾼다.'
+  ],
+  note: { tone: 'oxide', h: 'name 이 없으면 안 모인다',
+    p: ['<code class="k">FormData</code> 가 보는 것은 <code class="k">id</code> 가 아니라 <code class="k">name</code> 속성입니다. <code class="k">&lt;input id="price"&gt;</code> 만 있고 <code class="k">name</code> 이 없으면 그 칸은 조용히 빠집니다. 오류도 안 납니다.'] }
+},
+
+{
+  phase: 'POST', layer: 'web/', title: 'POST · 보내고 받는다',
+  where: 'index.html 1292~1297줄',
+  lead: '새 상품을 만들 때입니다. 위에서 모은 객체를 <b>글자로 바꿔</b> 몸통에 싣고, 만들어진 결과를 돌려받습니다.',
+  fig: { d: wire(['dom', 'fn', 'net', 'api'], 'POST', '/api/products'),
+    cap: '네 칸이 다 켜진다. 값을 꺼내고, 모으고, 보내고, 받는다.' },
+  code: [
+    'const res = await <b>fetch</b>(API_BASE + "/api/products", {',
+    '  <b>method</b>: "POST",',
+    '  <b>headers</b>: authHeaders({ "Content-Type": "application/json" }),',
+    '  <b>body</b>: <i>JSON.stringify</i>(body),',
+    '});',
+    '',
+    'const saved = await res.<b>json</b>();'
+  ],
+  steps: [
+    '<code class="k">method</code> 로 무엇을 할지 정한다. 안 적으면 GET 이다.',
+    '<code class="k">Content-Type</code> 은 "이 몸통은 JSON 이다" 라고 알려 주는 표시다. 이게 없으면 서버가 못 읽는다.',
+    '<code class="k">JSON.stringify</code> 가 객체를 글자로 바꾼다. 네트워크로는 글자만 오간다.',
+    '받은 답도 글자이므로 <code class="k">res.json()</code> 으로 다시 객체로 되돌린다.'
+  ],
+  note: { tone: 'teal', h: 'stringify 와 json() 은 한 쌍',
+    p: ['나갈 때 객체 → 글자(<code class="k">JSON.stringify</code>), 들어올 때 글자 → 객체(<code class="k">res.json()</code>). 이 둘이 짝입니다.'] },
+  cap: '실제 코드는 주소와 메서드를 고르는 두 줄이 앞에 더 있습니다. 다음 장에서 봅니다.'
+},
+
+{
+  phase: '수정', layer: 'web/', title: 'PATCH · 같은 함수가 둘로 갈린다',
+  where: 'index.html 1283~1297줄',
+  lead: '만들기와 고치기는 보내는 값이 똑같습니다. 다른 것은 <b>주소와 메서드</b>뿐이라 함수 하나가 둘 다 합니다.',
+  fig: { d: svg('0 0 600 250',
+      bx(190, 14, 220, 40, 'editing 이 있나', null) +
+      ar(258, 54, 180, 96, 'on', '있다') +
+      ar(342, 54, 420, 96, 'on', '없다') +
+      bx(56, 100, 240, 60, 'PATCH', '/api/products/P007', 'on') +
+      bx(340, 100, 240, 60, 'POST', '/api/products', 'on') +
+      ar(176, 160, 290, 196, 'on') + ar(460, 160, 346, 196, 'on') +
+      bx(198, 200, 240, 36, '같은 fetch 한 번', null, 'on')),
+    cap: '고르는 것은 두 줄. 나머지 코드는 그대로 공유한다.' },
+  code: [
+    'const path = <b>editing</b>',
+    '  ? `/api/products/${editing.productId}`',
+    '  : "/api/products";',
+    '',
+    'const res = await fetch(API_BASE + path, {',
+    '  method: <b>editing ? "PATCH" : "POST"</b>,',
+    '  headers: authHeaders({ "Content-Type": "application/json" }),',
+    '  body: JSON.stringify(body),',
+    '});'
+  ],
+  steps: [
+    '<code class="k">editing</code> 은 지금 고치는 중인 상품이다. 새로 만들 때는 <code class="k">null</code> 이다.',
+    '물음표와 콜론은 "맞으면 앞, 아니면 뒤" 를 고르는 짧은 문법이다.',
+    'PATCH 는 <b>준 칸만</b> 고친다. 안 보낸 칸은 서버가 건드리지 않는다.'
+  ],
+  note: { tone: 'teal', h: '왜 PUT 이 아니라 PATCH 인가',
+    p: ['PUT 은 보통 <b>전부 덮어쓰기</b>이고 PATCH 는 <b>준 것만 고치기</b>입니다. 이 화면은 폼의 모든 칸을 보내지만, 서버가 준 칸만 고치도록 만들어져 있어 PATCH 를 씁니다.'] }
+},
+
+{
+  phase: '수정', layer: 'web/', title: '실패한 응답을 칸마다 붙인다',
+  where: 'index.html 1299~1311줄',
+  lead: '서버가 거절하면 <b>어느 칸이 왜 틀렸는지</b>가 답에 들어 있습니다. 그것을 그 칸 아래에 붙여 줍니다.',
+  fig: { d: svg('0 0 600 216',
+      bx(20, 16, 250, 40, 'res.ok 가 거짓', null, 'warn') +
+      ar(145, 56, 145, 88, 'warn') +
+      bx(20, 92, 250, 50, 'detail 이 배열인가', null) +
+      ar(276, 108, 332, 84, 'warn', '배열') +
+      ar(276, 126, 332, 162, 'warn', '아니다') +
+      bx(340, 58, 240, 52, '칸마다 붙인다', 'data-err 로 찾아서', 'warn') +
+      bx(340, 136, 240, 52, '한 줄로 보여 준다', 'detail.message', 'warn') +
+      '<text class="t3" x="145" y="176">둘 다 화면만 바꾸고</text>' +
+      '<text class="t3" x="145" y="196">그 자리에서 끝낸다</text>'),
+    cap: '422 는 칸별 오류가 배열로 오고, 404 · 409 는 한 줄 메시지로 온다.' },
+  code: [
+    'if (!res.<b>ok</b>) {',
+    '  const detail = (await res.json()).detail;',
+    '  if (<b>Array.isArray</b>(detail)) {',
+    '    detail.forEach((d) =&gt; {',
+    '      const box = document.<b>querySelector</b>(',
+    '        `[data-err="${d.loc[d.loc.length - 1]}"]`);',
+    '      if (box) box.textContent = d.msg;',
+    '    });',
+    '  } else { msg.textContent = detail?.message; }',
+    '  <i>return</i>;',
+    '}'
+  ],
+  steps: [
+    '<code class="k">res.ok</code> 는 상태가 200번대일 때만 참이다. 404 나 422 여도 <code class="k">fetch</code> 자체는 실패가 아니다.',
+    '<code class="k">d.loc</code> 의 <b>마지막 칸</b>이 문제가 된 이름이다. 그 이름으로 오류 자리를 찾는다.',
+    '<code class="k">return</code> 으로 여기서 끝낸다. 아래의 "저장했다" 로 내려가면 안 된다.'
+  ],
+  note: { tone: 'oxide', h: 'fetch 는 404 에도 안 던진다',
+    p: ['네트워크가 끊겼을 때만 <code class="k">fetch</code> 가 오류를 냅니다. 서버가 "그런 상품 없다" 고 답한 것은 <b>제대로 받은 응답</b>입니다. 그래서 <code class="k">res.ok</code> 를 직접 봐야 합니다.'] }
+},
+
+{
+  phase: '삭제', layer: 'web/', title: 'DELETE · 보낼 것이 없다',
+  where: 'index.html 1320~1335줄',
+  lead: '무엇을 지울지는 <b>주소</b>에 들어 있습니다. 몸통도 없고 <code class="k">Content-Type</code> 도 없습니다.',
+  fig: { d: wire(['fn', 'net', 'api'], 'DELETE', '/api/products/P007'),
+    cap: 'DOM 에서 값을 꺼내는 단계가 없다. 지울 상품은 이미 editing 에 들어 있다.' },
+  code: [
+    'const res = await fetch(',
+    '  API_BASE + `/api/products/${editing.productId}`, {',
+    '  <b>method</b>: "DELETE",',
+    '  <b>headers</b>: authHeaders(),',
+    '});',
+    '',
+    'if (!res.ok) { <i>… 실패를 보여 주고 끝낸다</i> }',
+    '',
+    'await <b>loadProducts</b>(…);   <s>// 목록을 다시 받는다</s>',
+    'openProduct(null);        <s>// 폼을 비운다</s>'
+  ],
+  steps: [
+    '<code class="k">authHeaders()</code> 를 인수 없이 부른다. 더 붙일 헤더가 없기 때문이다.',
+    '성공해도 받을 내용이 없다. 그래서 <code class="k">res.json()</code> 을 안 부른다.',
+    '지운 뒤에는 목록을 <b>다시 받아온다</b>. 화면에서만 지우면 서버와 어긋난다.'
+  ],
+  note: { tone: 'oxide', h: '서버가 거절할 수 있다',
+    p: ['구매 이력이 있는 상품은 지워지지 않고 409 가 옵니다. 화면은 그 메시지를 그대로 보여 줍니다. 지울 수 있는지를 화면이 미리 판단하지 않습니다.'] }
+},
+
+{
+  phase: '스트리밍', layer: 'web/', title: 'POST 인데 답을 한 줄씩 받는다',
+  where: 'index.html 1122~1160줄',
+  lead: '질문 하나는 답이 길어서 다 만들어질 때까지 기다리지 않습니다. <code class="k">res.json()</code> 대신 <b>몸통을 조각째</b> 읽습니다.',
+  fig: { d: svg('0 0 600 212',
+      '<line class="ar" x1="40" y1="14" x2="40" y2="176"/>' +
+      bx(66, 12, 300, 30, '{"type":"route"}', null, 'on') +
+      bx(66, 48, 300, 30, '{"type":"sources"}', null, 'on') +
+      bx(66, 84, 300, 26, '{"type":"delta","text":"이 "}', null) +
+      bx(66, 116, 300, 26, '{"type":"delta","text":"제품"}', null) +
+      bx(66, 148, 300, 30, '{"type":"done"}', null, 'on') +
+      '<text class="t2 lft" x="382" y="32">route 를 찍는다</text>' +
+      '<text class="t2 lft" x="382" y="68">근거를 먼저 그린다</text>' +
+      '<text class="t2 lft" x="382" y="132">글자를 이어 붙인다</text>' +
+      '<text class="t2 lft" x="382" y="168">버튼을 다시 켠다</text>' +
+      '<text class="t3 lft" x="40" y="200">한 줄에 JSON 하나. 줄바꿈으로 자른다</text>'),
+    cap: '서버가 만드는 대로 나오므로 첫 글자가 훨씬 빨리 보인다.' },
+  code: [
+    'const reader = res.<b>body.getReader</b>();',
+    'const decoder = new TextDecoder();',
+    'let buffer = "";',
+    '',
+    'while (true) {',
+    '  const { done, value } = await reader.<b>read</b>();',
+    '  if (done) break;',
+    '  buffer += decoder.decode(value, { stream: true });',
+    '  const lines = buffer.<b>split</b>("\\n");',
+    '  buffer = lines.<i>pop</i>();   <s>// 잘린 마지막 줄은 남겨 둔다</s>',
+    '  for (const line of lines) { … JSON.parse(line) … }',
+    '}'
+  ],
+  steps: [
+    '<code class="k">getReader()</code> 로 몸통을 조각째 읽는다. 조각은 글자 단위로 안 끊긴다.',
+    '조각을 <code class="k">buffer</code> 에 이어 붙이고 줄바꿈으로 자른다.',
+    '<code class="k">pop()</code> 이 중요하다. 마지막 조각은 줄이 <b>잘려 있을 수 있어서</b> 다음 조각과 이어 붙이려고 남겨 둔다.',
+    '완성된 줄만 <code class="k">JSON.parse</code> 로 읽어 종류에 따라 화면을 바꾼다.'
+  ],
+  note: { tone: 'oxide', h: '이미 나가기 시작한 응답은 상태를 못 바꾼다',
+    p: ['첫 줄이 오는 순간 상태는 200 으로 정해집니다. 그래서 중간에 서버가 실패해도 500 이 아니라 <code class="k">{"type":"error"}</code> 줄이 옵니다. 화면은 그 줄을 보고 오류를 보여 줍니다.'] }
+},
+
+{
+  phase: '되짚기', layer: 'web/', badge: 'gray', title: '한 표로 견주기',
+  where: 'web/index.html',
+  lead: '네 가지 요청이 무엇을 쓰고 무엇을 안 쓰는지 나란히 놓으면 이렇습니다.',
+  fig: { d: svg('0 0 600 220',
+      '<text class="t3" x="300" y="20">모든 요청이 authHeaders() 를 지난다</text>' +
+      bx(20, 32, 116, 36, 'GET', null, 'on') +
+      '<text class="t1 lft" x="152" y="55">api(path)</text>' +
+      '<text class="t2 lft" x="336" y="55">받아서 그린다</text>' +
+      bx(20, 76, 116, 36, 'POST', null, 'on') +
+      '<text class="t1 lft" x="152" y="99">saveProduct()</text>' +
+      '<text class="t2 lft" x="336" y="99">만들고 받는다</text>' +
+      bx(20, 120, 116, 36, 'PATCH', null, 'on') +
+      '<text class="t1 lft" x="152" y="143">saveProduct()</text>' +
+      '<text class="t2 lft" x="336" y="143">고치고 받는다</text>' +
+      bx(20, 164, 116, 36, 'DELETE', null, 'on') +
+      '<text class="t1 lft" x="152" y="187">deleteProduct()</text>' +
+      '<text class="t2 lft" x="336" y="187">지운다</text>'),
+    cap: 'POST 와 PATCH 는 함수 하나를 같이 쓴다. 주소와 메서드만 갈린다.' },
+  facts: { title: '무엇을 쓰나',
+    cols: ['메서드', '몸통', 'res.json()'], mono: [0],
+    rows: [
+      ['GET', '없다', '쓴다'],
+      ['POST', 'JSON.stringify', '쓴다'],
+      ['PATCH', 'JSON.stringify', '쓴다'],
+      ['DELETE', '없다', '안 쓴다']
+    ] },
+  steps: [
+    '<b>값 꺼내기</b> — <code class="k">getElementById</code> 하나, <code class="k">querySelectorAll</code> 여럿, 폼은 <code class="k">FormData</code>.',
+    '<b>보내기</b> — <code class="k">method</code> · <code class="k">headers</code> · <code class="k">body</code> 셋을 정한다.',
+    '<b>받기</b> — <code class="k">res.ok</code> 를 먼저 보고, 괜찮으면 <code class="k">res.json()</code>.',
+    '<b>다시 그리기</b> — 고치거나 지운 뒤에는 목록을 다시 받아온다.'
+  ],
+  note: { tone: 'teal', h: '다음에 볼 것',
+    p: ['이 요청들이 서버에 닿은 뒤 무슨 일이 벌어지는지는 <b>질문 하나가 지나가는 길</b> 슬라이드에 있습니다.'] }
+}
+
+];
+
+/* ── 그리기 ───────────────────────────────────────────────── */
+function gridHtml(t) {
+  const n = t.cols.length;
+  const mono = t.mono || [];
+  let h = '';
+  if (t.title) h += '<h2>' + esc(t.title) + '</h2>';
+  h += '<div class="grid" style="grid-template-columns:' +
+       (n === 2 ? '1fr max-content' : '1fr max-content max-content') + '">';
+  t.cols.forEach(function (c, i) {
+    h += '<div class="h top' + (i ? ' bl' : '') + '">' + esc(c) + '</div>';
+  });
+  t.rows.forEach(function (r) {
+    r.forEach(function (v, i) {
+      h += '<div class="' + (mono.indexOf(i) >= 0 ? 'c ' : '') + (i ? 'bl' : '') + '">' +
+           esc(v) + '</div>';
+    });
+  });
+  return h + '</div>';
+}
+
+let cur = 0;
+
+function show(i) {
+  cur = Math.max(0, Math.min(S.length - 1, i));
+  const s = S[cur];
+
+  const fig = document.getElementById('figure');
+  fig.innerHTML = s.fig.d + (s.fig.cap ? '<p class="figcap">' + s.fig.cap + '</p>' : '');
+
+  const out = [];
+  out.push('<div class="eyebrow"><span class="badge' + (s.badge === 'gray' ? ' gray' : '') +
+    '">' + esc(s.layer) + '</span><span class="where">' + esc(s.where) +
+    '</span><span class="step-no">' + (cur + 1) + ' / ' + S.length + '</span></div>');
+  out.push('<h1>' + esc(s.title) + '</h1>');
+  out.push('<p class="lead">' + s.lead + '</p>');
+  if (s.code) out.push('<div class="sec"><h2>코드</h2><div class="code">' +
+    s.code.join('\n') + '</div></div>');
+  if (s.steps) {
+    let li = '';
+    s.steps.forEach(function (t, n) {
+      li += '<li><span class="n">' + (n + 1) + '</span><span>' + t + '</span></li>';
+    });
+    out.push('<div class="sec"><h2>읽는 법</h2><ol class="steps">' + li + '</ol></div>');
+  }
+  if (s.note) {
+    out.push('<div class="note' + (s.note.tone === 'oxide' ? ' warn' : '') + '"><h3>' +
+      esc(s.note.h) + '</h3>' +
+      s.note.p.map(function (p) { return '<p>' + p + '</p>'; }).join('') + '</div>');
+  }
+  if (s.facts) out.push('<div class="sec">' + gridHtml(s.facts) + '</div>');
+  if (s.cap) out.push('<p class="cap">' + s.cap + '</p>');
+  document.getElementById('notes-in').innerHTML = out.join('');
+
+  document.getElementById('phase').textContent = s.phase;
+  document.getElementById('at').textContent = cur + 1;
+  document.getElementById('bar').style.width = ((cur + 1) / S.length * 100) + '%';
+  document.getElementById('prev').disabled = cur === 0;
+  document.getElementById('next').disabled = cur === S.length - 1;
+  document.getElementById('notes').scrollTop = 0;
+  fig.scrollTop = 0;
+
+  try { localStorage.setItem('deck-webcrud', String(cur)); } catch (e) {}
+}
+
+document.getElementById('of').textContent = S.length;
+document.getElementById('prev').addEventListener('click', function () { show(cur - 1); });
+document.getElementById('next').addEventListener('click', function () { show(cur + 1); });
+document.addEventListener('keydown', function (e) {
+  if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') { show(cur + 1); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { show(cur - 1); e.preventDefault(); }
+  else if (e.key === 'Home') { show(0); e.preventDefault(); }
+  else if (e.key === 'End') { show(S.length - 1); e.preventDefault(); }
+});
+
+let start = 0;
+try { start = Math.min(parseInt(localStorage.getItem('deck-webcrud') || '0', 10) || 0, S.length - 1); } catch (e) {}
+show(start);
+</script>
