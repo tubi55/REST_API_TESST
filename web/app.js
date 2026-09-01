@@ -78,8 +78,21 @@ btnSubmit.addEventListener("click", (e) => {
 
   // form안쪽에 있는 값을 모두 가져와서 키와, value분리
   const formInit = new FormData(form).entries();
-  // 키와 value값 분리될걸 하나의 객체(딕셔너리)형태로 묶어줌
+  // 키와 value값 분리된걸 하나의 객체(딕셔너리)형태로 묶어줌
   const productInfo = Object.fromEntries(formInit);
 
   console.log(productInfo);
 });
+
+/*
+  fetch함수의 두번쨰 인자로 전달되는 객체 정보 구조
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer dev-token",
+      "X-User-Id": "admin",
+      "Content-Type": "application/json"
+    }
+    body: 서버에 전달할 문자화된 JSON 정보
+  }
+*/
