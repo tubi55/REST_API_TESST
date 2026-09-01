@@ -23,7 +23,8 @@ const getCustomer = async () => {
 
 // 상품정보 확인 함수
 const getProduct = async () => {
-  const res = await fetch("/api/products", headers);
+  // sort=createdAt&order=desc : 최근 등록된 상품(product_id가 큰 순)부터 내려받음
+  const res = await fetch("/api/products?sort=createdAt&order=desc", headers);
   if (!res.ok) throw new Error();
   // 응답객체를 json형태로 변환하는 작업도 시간이 걸리는 작업이기 때문에 await로 promise객체 정보값이 완료될때까지 홀딩(동기화)
   const result = await res.json();
@@ -86,7 +87,7 @@ btnSubmit.addEventListener("click", async (e) => {
 
   console.log(productInfo);
 
-  const res = await fetch("/api/products", {
+  const res = await fetch("/api/products?sort=createdAt&order=desc", {
     method: "POST",
     headers: {
       Authorization: "Bearer dev-token",
