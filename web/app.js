@@ -40,20 +40,27 @@ const getCustomerInfo = async (id) => {
 };
 
 // 리스트로 출력할 고객정보 배열로 반환함수
-
 const getCustomerList = async () => {
   const lists = await getCustomer();
-
   let tags = "";
 
   // 배열을 반복돌면서 각각의 데이터와 순번 출력
   lists.forEach((data, index) => {
     tags += `
-      <button ${(onclick = () => getCustomerInfo(data.customer_id))}>${data.name}</button>
+      <button data-id=${data.customer_id}>${data.name}</button>
     `;
   });
 
+  // 반복돌면서 문자열로 만든 버튼 태그 문자열을 Section안쪽에 돔으로 추가
   frame.innerHTML = tags;
+
+  // 추가된 버튼을 모두 찾음
+  const btns = document.querySelectorAll("#frame button");
+  // 해당 버튼을 반복돌면서 이벤트 연결
+  btns.forEach((btn) => {
+    const cid = btn.getAttribute("data-id");
+    btn.addEventListener("click", () => getCustomerInfo(cid));
+  });
 };
 
 getCustomerList();
