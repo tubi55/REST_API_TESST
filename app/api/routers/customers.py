@@ -1,18 +1,13 @@
 """고객 조회, 유사 후기 검색, 상품 추천 API를 제공한다."""
 
-# 라우터를 만들고, 의존성을 붙이고, 오류를 알리기 위해 사용한다.
 from fastapi import APIRouter, Depends, HTTPException
 
-# 인증 · 쿼터 관문 · 사용 기록 맥락을 붙이는 세 함수다.
 from app.api.dependencies import caller, guard, meter
 
-# 추천을 만드는 모듈과 조회를 모아 둔 모듈이다.
 from app.features import recommending, retrieve
 
-# 사전을 붙여 개인정보를 지우는 함수다.
 from app.features.privacy import mask_text
 
-# 응답의 모양을 정해 둔 네 가지다.
 from app.features.schemas import CustomerBrief, Dashboard, Recommended, SimilarReviews
 
 # 이 파일의 주소는 모두 /api/customers 로 시작한다.
